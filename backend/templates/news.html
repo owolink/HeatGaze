@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Новости - HeatGaze Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/demo.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">НовостиОнлайн</h1>
+            <nav class="nav">
+                <ul>
+                    <li><a href="/api/demo/news-page" class="active">Все новости</a></li>
+                    <li><a href="/api/demo/news-page?category=Технологии">Технологии</a></li>
+                    <li><a href="/api/demo/news-page?category=Разработка">Разработка</a></li>
+                    <li><a href="/api/demo/news-page?category=Маркетинг">Маркетинг</a></li>
+                    <li><a href="/api/demo/weather-page">Погода</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="news-header">
+            <div class="container">
+                <h2>Последние новости</h2>
+                <p class="current-date">{{ current_date }}</p>
+            </div>
+        </section>
+
+        <section class="news-grid">
+            <div class="container">
+                <div class="featured-news">
+                    <article class="news-card featured">
+                        <div class="news-image" style="background-color: #f0f0f0;">
+                            
+                        </div>
+                        <div class="news-content">
+                            <span class="news-category">{{ news[0].category }}</span>
+                            <h3 class="news-title">{{ news[0].title }}</h3>
+                            <p class="news-excerpt">{{ news[0].content[:200] }}...</p>
+                            <div class="news-meta">
+                                <span class="news-date">{{ news[0].date }}</span>
+                                <span class="news-author">{{ news[0].author }}</span>
+                            </div>
+                            <a href="/api/demo/news-page?article={{ news[0].id }}" class="read-more">Читать далее</a>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="news-list">
+                    {% for article in news[1:] %}
+                    <article class="news-card">
+                        <div class="news-image" style="background-color: #f0f0f0;">
+                        </div>
+                        <div class="news-content">
+                            <span class="news-category">{{ article.category }}</span>
+                            <h3 class="news-title">{{ article.title }}</h3>
+                            <p class="news-excerpt">{{ article.content[:100] }}...</p>
+                            <div class="news-meta">
+                                <span class="news-date">{{ article.date }}</span>
+                                <span class="news-author">{{ article.author }}</span>
+                            </div>
+                            <a href="/api/demo/news-page?article={{ article.id }}" class="read-more">Читать далее</a>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <section class="sidebar">
+            <div class="container">
+                <div class="popular-news">
+                    <h3>Популярные новости</h3>
+                    <ul>
+                        {% for article in news[:3] %}
+                        <li>
+                            <a href="/api/demo/news-page?article={{ article.id }}">{{ article.title }}</a>
+                            <span class="sidebar-date">{{ article.date }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="categories">
+                    <h3>Категории</h3>
+                    <ul>
+                        <li><a href="/api/demo/news-page?category=Технологии">Технологии</a></li>
+                        <li><a href="/api/demo/news-page?category=Разработка">Разработка</a></li>
+                        <li><a href="/api/demo/news-page?category=Маркетинг">Маркетинг</a></li>
+                        <li><a href="/api/demo/news-page?category=Искусственный интеллект">Искусственный интеллект</a></li>
+                        <li><a href="/api/demo/news-page?category=UX Исследования">UX Исследования</a></li>
+                    </ul>
+                </div>
+
+                <div class="advertisement">
+                    <h3>Реклама</h3>
+                    <div class="ad-banner">
+                        <p>Место для вашей рекламы</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <h2>НовостиОнлайн</h2>
+                    <p>Актуальные новости и события</p>
+                </div>
+                <div class="footer-links">
+                    <h3>Быстрые ссылки</h3>
+                    <ul>
+                        <li><a href="/api/demo/news-page">Главная</a></li>
+                        <li><a href="/api/demo/news-page?category=Технологии">Технологии</a></li>
+                        <li><a href="/api/demo/news-page?category=Разработка">Разработка</a></li>
+                        <li><a href="/api/demo/weather-page">Погода</a></li>
+                    </ul>
+                </div>
+                <div class="footer-contact">
+                    <h3>Контакты</h3>
+                    <p>Email: info@news-online.com</p>
+                    <p>Телефон: +7 (123) 456-78-90</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 НовостиОнлайн. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html> 

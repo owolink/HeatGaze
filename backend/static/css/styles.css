@@ -1,0 +1,442 @@
+/* Main styles for HeatGaze app */
+
+:root {
+    --primary-color: #4a6fff;
+    --secondary-color: #8a00d4;
+    --accent-color: #d527b7;
+    --dark-color: #333;
+    --light-color: #f4f4f4;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --border-radius: 4px;
+    --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s ease;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    line-height: 1.6;
+    color: var(--dark-color);
+    background-color: var(--light-color);
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+/* Header */
+.header {
+    background-color: #fff;
+    box-shadow: var(--box-shadow);
+    padding: 1rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.nav ul {
+    display: flex;
+    list-style: none;
+}
+
+.nav ul li {
+    margin-left: 1.5rem;
+}
+
+.nav ul li a {
+    text-decoration: none;
+    color: var(--dark-color);
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.nav ul li a:hover,
+.nav ul li a.active {
+    color: var(--primary-color);
+}
+
+/* Hero Section */
+.hero {
+    padding: 4rem 0;
+    text-align: center;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: #fff;
+}
+
+.hero h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.hero p {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition);
+    border: none;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background-color: #3959dd;
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: #fff;
+}
+
+.btn-secondary:hover {
+    background-color: #7300b0;
+}
+
+.btn-outline {
+    background-color: transparent;
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+}
+
+.btn-outline:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+}
+
+.btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Demo Site Section */
+.demo-site {
+    padding: 2rem 0;
+}
+
+.demo-site h3 {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.demo-site p {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.demo-links {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.demo-frame-container {
+    width: 100%;
+    height: 600px;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.demo-frame-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/* Calibration Section */
+.calibration {
+    padding: 2rem 0;
+    text-align: center;
+}
+
+.calibration h3 {
+    margin-bottom: 1rem;
+}
+
+.calibration p {
+    margin-bottom: 1.5rem;
+}
+
+#calibrationContainer {
+    width: 100%;
+    height: 400px;
+    background-color: #fff;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+}
+
+/* Heatmap Viewer */
+.heatmap-viewer {
+    padding: 2rem 0;
+}
+
+.heatmap-viewer h3 {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.heatmap-viewer p {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.video-container {
+    width: 100%;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+#videoPlayer {
+    width: 100%;
+    height: 500px;
+    background-color: #000;
+    margin-bottom: 1rem;
+    border-radius: var(--border-radius);
+}
+
+.screenshots-container {
+    width: 100%;
+}
+
+.screenshots-container h4 {
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.screenshots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.screenshot-item {
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--box-shadow);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.screenshot-item:hover {
+    transform: translateY(-5px);
+}
+
+.screenshot-item img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+}
+
+#analyzeButton {
+    display: block;
+    margin: 0 auto;
+}
+
+/* Heatmap Analysis Section */
+.heatmap-analysis {
+    padding: 2rem 0;
+}
+
+.heatmap-analysis h3 {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.heatmap-filters {
+    margin-bottom: 2rem;
+}
+
+.heatmap-filters h4 {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.filter-btn {
+    padding: 0.75rem 1rem;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.filter-btn:hover {
+    background-color: #f0f0f0;
+}
+
+.filter-btn.active {
+    background-color: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+}
+
+.heatmap-results {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.heatmap-image {
+    width: 100%;
+}
+
+.heatmap-image img {
+    width: 100%;
+    height: auto;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+}
+
+.heatmap-stats {
+    width: 100%;
+}
+
+.heatmap-stats h4 {
+    margin-bottom: 1rem;
+}
+
+.stats-result {
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+}
+
+.stat-item {
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+.stat-label {
+    font-weight: 500;
+}
+
+.stat-value {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+/* About and Contact Sections */
+.about, .contact {
+    padding: 3rem 0;
+    background-color: #fff;
+}
+
+.about h3, .contact h3 {
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.about p, .contact p {
+    text-align: center;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 1.5rem;
+}
+
+/* Footer */
+.footer {
+    background-color: var(--dark-color);
+    color: #fff;
+    padding: 2rem 0;
+    text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .hero h2 {
+        font-size: 2rem;
+    }
+    
+    .demo-frame-container {
+        height: 400px;
+    }
+    
+    .heatmap-results {
+        grid-template-columns: 1fr;
+    }
+    
+    .nav ul {
+        flex-direction: column;
+    }
+    
+    .nav ul li {
+        margin: 0.5rem 0;
+    }
+    
+    .header .container {
+        flex-direction: column;
+    }
+    
+    .logo {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+} 

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HeatGaze - Анализ тепловых карт в реальном времени</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="https://api.gazerecorder.com/GazeCloudAPI.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">HeatGaze</h1>
+            <nav class="nav">
+                <ul>
+                    <li><a href="/" class="active">Главная</a></li>
+                    <li><a href="#about">О проекте</a></li>
+                    <li><a href="#contact">Контакты</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h2>Анализ тепловых карт в реальном времени</h2>
+                <p>Отслеживайте взгляд пользователя, создавайте тепловые карты и анализируйте данные для улучшения UX/UI вашего веб-сайта</p>
+                <div class="buttons">
+                    <button id="startButton" class="btn btn-primary">Начать отслеживание</button>
+                    <button id="stopButton" class="btn btn-secondary" disabled>Остановить</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="demoSite" class="demo-site" style="display: none;">
+            <div class="container">
+                <h3>Демо-сайт</h3>
+                <p>Просматривайте страницы для создания тепловой карты</p>
+                <div class="demo-links">
+                    <a href="/api/demo/news-page" target="demoFrame" class="btn btn-outline">Новости</a>
+                    <a href="/api/demo/weather-page" target="demoFrame" class="btn btn-outline">Погода</a>
+                </div>
+                <div class="demo-frame-container">
+                    <iframe name="demoFrame" id="demoFrame" src="/api/demo/news-page"></iframe>
+                </div>
+            </div>
+        </section>
+
+        <section id="calibration" class="calibration" style="display: none;">
+            <div class="container">
+                <h3>Калибровка</h3>
+                <p>Следуйте за точкой для калибровки отслеживания взгляда</p>
+                <div id="calibrationContainer"></div>
+            </div>
+        </section>
+
+        <section id="heatmapViewer" class="heatmap-viewer" style="display: none;">
+            <div class="container">
+                <h3>Просмотр записи</h3>
+                <p>Просмотрите запись сеанса и сделайте скриншоты для дальнейшего анализа</p>
+                <div class="video-container">
+                    <div id="videoPlayer"></div>
+                    <button id="takeScreenshot" class="btn btn-primary">Сделать скриншот</button>
+                </div>
+                <div class="screenshots-container">
+                    <h4>Скриншоты</h4>
+                    <div id="screenshotsGrid" class="screenshots-grid"></div>
+                    <button id="analyzeButton" class="btn btn-primary" disabled>Анализировать</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="heatmapAnalysis" class="heatmap-analysis" style="display: none;">
+            <div class="container">
+                <h3>Анализ тепловых карт</h3>
+                <div class="heatmap-filters">
+                    <h4>Фильтры анализа</h4>
+                    <div class="filters-grid">
+                        <button class="filter-btn" data-filter="basic_stats">Базовая статистика</button>
+                        <button class="filter-btn" data-filter="gradient">Градиент изменений</button>
+                        <button class="filter-btn" data-filter="clustering">Кластеризация</button>
+                        <button class="filter-btn" data-filter="correlation">Корреляция</button>
+                    </div>
+                </div>
+                <div class="heatmap-results">
+                    <div class="heatmap-image">
+                        <img id="currentHeatmap" src="" alt="Тепловая карта">
+                    </div>
+                    <div class="heatmap-stats">
+                        <h4>Результаты анализа</h4>
+                        <div id="statsResult" class="stats-result"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="about">
+            <div class="container">
+                <h3>О проекте</h3>
+                <p>HeatGaze - это инструмент для анализа пользовательского опыта, основанный на отслеживании взгляда. Он позволяет создавать и анализировать тепловые карты в реальном времени, что помогает улучшить интерфейс вашего веб-сайта.</p>
+                <p>Проект использует технологии GazeCloudAPI для отслеживания взгляда, а также алгоритмы анализа изображений для создания детальных отчетов о взаимодействии пользователя с интерфейсом.</p>
+            </div>
+        </section>
+
+        <section id="contact" class="contact">
+            <div class="container">
+                <h3>Контакты</h3>
+                <p>По всем вопросам связанным с использованием системы HeatGaze, обращайтесь по электронной почте: info@heatgaze.com</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 HeatGaze. Все права защищены.</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html> 

@@ -1,0 +1,31 @@
+/* Import CSS variables and components */
+@import './css/variables.css';
+@import './css/auth.css';
+@import './css/header.css';
+@import './css/dashboard.css';
+
+/* Base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  line-height: 1.5;
+  background-color: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+main {
+  min-height: calc(100vh - var(--header-height));
+  padding-bottom: var(--space-xl);
+}

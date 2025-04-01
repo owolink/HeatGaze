@@ -1,0 +1,130 @@
+/* Header Component Styling */
+
+.app-header {
+  background-color: var(--color-white);
+  box-shadow: var(--shadow-sm);
+  height: var(--header-height);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  width: 100%;
+}
+
+.header-container {
+  max-width: var(--max-content-width);
+  margin: 0 auto;
+  padding: 0 var(--space-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+}
+
+.logo a {
+  text-decoration: none;
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+}
+
+.logo h1 {
+  font-size: var(--font-size-large);
+  font-weight: 700;
+  margin: 0;
+}
+
+.main-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.main-nav a {
+  text-decoration: none;
+  color: var(--color-text);
+  font-weight: 500;
+  transition: color var(--transition-fast);
+}
+
+.main-nav a:hover {
+  color: var(--color-primary);
+}
+
+.auth-links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.auth-links .btn-link {
+  color: var(--color-text);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color var(--transition-fast);
+}
+
+.auth-links .btn-link:hover {
+  color: var(--color-primary);
+}
+
+.auth-links .btn-primary {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color var(--transition-fast);
+  display: inline-block;
+  width: auto;
+}
+
+.auth-links .btn-primary:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.username {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-primary);
+  font-weight: 500;
+  padding: 0;
+  font-size: var(--font-size-base);
+  transition: color var(--transition-fast);
+  text-decoration: underline;
+}
+
+.btn-link:hover {
+  color: var(--color-primary-dark);
+}
+
+@media (max-width: 768px) {
+  .header-container {
+    padding: 0 var(--space-md);
+  }
+  
+  .main-nav {
+    gap: var(--space-md);
+  }
+  
+  .logo h1 {
+    font-size: var(--font-size-medium);
+  }
+} 

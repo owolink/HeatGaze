@@ -1,0 +1,68 @@
+/* Not Found (404) Page Styles */
+.not-found-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+  padding: 20px;
+  background-color: #f8f9fa;
+}
+
+.not-found-content {
+  text-align: center;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  padding: 50px 40px;
+  max-width: 500px;
+  width: 100%;
+}
+
+.not-found-content h1 {
+  font-size: 5rem;
+  color: #d32f2f;
+  margin: 0 0 10px 0;
+  line-height: 1;
+}
+
+.not-found-content h2 {
+  font-size: 1.8rem;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.not-found-content p {
+  color: #666;
+  margin-bottom: 30px;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.back-button {
+  display: inline-block;
+  background-color: #4a90e2;
+  color: white;
+  padding: 12px 25px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.back-button:hover {
+  background-color: #357abd;
+}
+
+@media (max-width: 480px) {
+  .not-found-content {
+    padding: 30px 20px;
+  }
+  
+  .not-found-content h1 {
+    font-size: 4rem;
+  }
+  
+  .not-found-content h2 {
+    font-size: 1.5rem;
+  }
+} 
