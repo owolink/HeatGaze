@@ -48,6 +48,7 @@ takeScreenshotButton.addEventListener('click', takeScreenshot);
 analyzeButton.addEventListener('click', showAnalysis);
 
 // Configure GazeCloud API
+// These are now configured in the window.addEventListener("load") block at the bottom
 // GazeCloudAPI.OnResult = handleGazeData;
 // GazeCloudAPI.OnCalibrationComplete = handleCalibrationComplete;
 // GazeCloudAPI.OnCamDenied = handleCamDenied;

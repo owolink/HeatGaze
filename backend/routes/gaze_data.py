@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.orm import Session
 from app.utils import get_db
-from app.models import Session as SessionModel, GazeData, User
-from app.schemas import SessionCreate, SessionResponse, GazeDataCreate
+from app.models import Session as SessionModel, GazeData, User, Screenshot
+from app.schemas import SessionCreate, SessionResponse, GazeDataCreate, ScreenshotCreate, ScreenshotResponse
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 from routes.auth import get_current_user
 import os
@@ -205,7 +205,7 @@ async def add_gaze_point(
 @router.post("/sessions/{session_id}/gaze/batch", response_model=dict)
 async def add_gaze_points_batch(
     session_id: int,
-    gaze_points: List[GazePointCreate] = Body(...),
+    gaze_points: List[dict] = Body(...),
     db: Session = Depends(get_db)
 ):
     # Check if session exists
@@ -214,43 +214,59 @@ async def add_gaze_points_batch(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     
+    points_added = 0
+    try:
+        for point in gaze_points:
+            db_gaze_point = GazeData(
+                session_id=session_id,
+                timestamp=datetime.fromtimestamp(point['timestamp'] / 1000.0),
+                x=point['x'],
+                y=point['y'],
+                pupil_left=None,
+                pupil_right=None
+            )
+            db.add(db_gaze_point)
+            points_added += 1
+        
+        # Update session last updated time
+        session.updated_at = datetime.now()
+        db.commit()
+        
+        return {"status": "success", "count": points_added}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error processing gaze data: {str(e)}")
+
+@router.get("/sessions/{session_id}/gaze", response_model=List[dict])
+async def get_gaze_points(
+    session_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get all gaze points for a session"""
+    # Check if session exists
+    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+    
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Get all gaze points for the session
+    gaze_points = db.query(GazeData).filter(GazeData.session_id == session_id).all()
+    
+    # Format points for frontend
+    formatted_points = []
     for point in gaze_points:
-        db_gaze_point = GazeData(
-            session_id=session_id,
-            timestamp=datetime.fromtimestamp(point.timestamp / 1000.0),
-            x=point.x,
-            y=point.y,
-            state=point.state if hasattr(point, 'state') else 0,
-            url=point.url if hasattr(point, 'url') else ""
-        )
-        db.add(db_gaze_point)
+        formatted_points.append({
+            "timestamp": int(point.timestamp.timestamp() * 1000),  # Convert to milliseconds
+            "x": point.x,
+            "y": point.y,
+            "state": 0,  # Default state for valid points
+            "url": ""    # Placeholder
+        })
     
-    # Update session last updated time
-    session.updated_at = datetime.now()
-    db.commit()
-    
-    return {"status": "success", "count": len(gaze_points)}
+    return formatted_points
 
 # Comment out legacy routes that use get_current_user until we fix the auth system
 """
-@router.get("/sessions/{session_id}/gaze", response_model=List[GazePointOut])
-async def get_gaze_points(
-    session_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    session = db.query(GazeSession).filter(
-        GazeSession.id == session_id,
-        GazeSession.user_id == current_user.id
-    ).first()
-    
-    if not session:
-        raise HTTPException(status_code=404, detail="Сессия не найдена")
-    
-    gaze_points = db.query(GazePoint).filter(GazePoint.session_id == session_id).all()
-    
-    return gaze_points
-
 @router.post("/sessions/{session_id}/screenshots", response_model=ScreenshotOut)
 async def add_screenshot(
     session_id: int,
@@ -325,3 +341,89 @@ async def get_screenshots(
     
     return screenshots
 """ 
+
+@router.put("/sessions/{session_id}/end", response_model=SessionResponse)
+async def end_session(
+    session_id: int,
+    db: Session = Depends(get_db)
+):
+    # Check if session exists
+    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+    
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Update session with end time
+    session.updated_at = datetime.now()
+    db.commit()
+    db.refresh(session)
+    
+    return session 
+
+@router.post("/sessions/{session_id}/screenshots", response_model=ScreenshotResponse)
+async def add_screenshot(
+    session_id: int,
+    screenshot_data: ScreenshotCreate,
+    db: Session = Depends(get_db)
+):
+    # Check if session exists
+    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+    
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    try:
+        # Ensure directory exists
+        os.makedirs("static/screenshots", exist_ok=True)
+        
+        # Process the image data
+        import base64
+        from PIL import Image
+        import io
+        
+        # Decode base64 image
+        if ',' in screenshot_data.image_data:
+            img_data = base64.b64decode(screenshot_data.image_data.split(',')[1])
+        else:
+            img_data = base64.b64decode(screenshot_data.image_data)
+            
+        img = Image.open(io.BytesIO(img_data))
+        
+        # Save image
+        filename = f"screenshot_{session_id}_{int(screenshot_data.timestamp)}.png"
+        filepath = f"static/screenshots/{filename}"
+        img.save(filepath)
+        
+        # Save to db
+        screenshot = Screenshot(
+            session_id=session_id,
+            timestamp=screenshot_data.timestamp,
+            image_path=filepath,
+            url=screenshot_data.url
+        )
+        
+        db.add(screenshot)
+        db.commit()
+        db.refresh(screenshot)
+        
+        return screenshot
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error saving screenshot: {str(e)}")
+
+@router.get("/sessions/{session_id}/screenshots", response_model=List[ScreenshotResponse])
+async def get_screenshots(
+    session_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get all screenshots for a session"""
+    # Check if session exists
+    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+    
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Get all screenshots for the session
+    screenshots = db.query(Screenshot).filter(Screenshot.session_id == session_id).all()
+    
+    return screenshots 

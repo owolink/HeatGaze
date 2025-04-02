@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 
 # Eye tracking session schemas
@@ -53,6 +53,23 @@ class HeatmapResponse(BaseModel):
     url: str
     created_at: datetime
     image_path: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+# Screenshot schemas
+class ScreenshotCreate(BaseModel):
+    timestamp: float
+    image_data: str
+    url: str
+
+class ScreenshotResponse(BaseModel):
+    id: int
+    session_id: int
+    timestamp: float
+    image_path: str
+    url: str
+    stats: Optional[Dict[str, Any]] = None
 
     class Config:
         from_attributes = True

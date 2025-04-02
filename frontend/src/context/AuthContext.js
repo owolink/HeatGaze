@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/api'; // Import our custom axios instance
 
 // Create the Authentication Context
 const AuthContext = createContext();
@@ -16,15 +16,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Set axios defaults
-  useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    } else {
-      delete axios.defaults.headers.common['Authorization'];
-    }
-  }, [token]);
-
   // Load user from token on mount
   useEffect(() => {
     const loadUser = async () => {
@@ -34,7 +25,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
-        const response = await axios.get('/api/users/me');
+        const response = await api.get('/api/users/me');
         setCurrentUser(response.data);
         setError(null);
       } catch (err) {
@@ -52,28 +43,51 @@ export const AuthProvider = ({ children }) => {
   // Login function
   const login = async (username, password) => {
     try {
+      console.log('Login attempt for:', username);
       setLoading(true);
       setError(null);
 
-      const formData = new FormData();
-      formData.append('username', username);
-      formData.append('password', password);
-
-      const response = await axios.post('/api/token', formData);
+      // Use the dedicated auth helper method
+      const response = await api.auth.login(username, password);
       
+      console.log('Login successful!', response.data);
+      
+      // Extract the token
       const { access_token } = response.data;
       
+      // Save token to localStorage and state
       localStorage.setItem('token', access_token);
       setToken(access_token);
       
       // Fetch user info
-      const userResponse = await axios.get('/api/users/me');
+      console.log('Fetching user info...');
+      const userResponse = await api.auth.me();
+      console.log('User info retrieved!');
       setCurrentUser(userResponse.data);
       
       return true;
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.response?.data?.detail || 'Login failed. Please try again.');
+      
+      // More detailed error logging
+      if (err.response) {
+        console.error('Error response:', err.response.data);
+        console.error('Error status:', err.response.status);
+        console.error('Error headers:', err.response.headers);
+        
+        // Extract the error message from the response if available
+        const errorMessage = err.response.data?.detail || 'Login failed. Please try again.';
+        setError(errorMessage);
+      } else if (err.request) {
+        // The request was made but no response was received
+        console.error('Error request:', err.request);
+        setError('No response from the server. Please try again later.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Error message:', err.message);
+        setError('Failed to connect to the server. Please try again later.');
+      }
+      
       return false;
     } finally {
       setLoading(false);
@@ -94,17 +108,20 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      await axios.post('/api/users/register', {
-        username,
-        email,
-        password
-      });
+      // Use the dedicated auth helper method
+      await api.auth.register({ username, email, password });
 
       // Auto login after successful registration
       return await login(username, password);
     } catch (err) {
       console.error('Registration error:', err);
-      setError(err.response?.data?.detail || 'Registration failed. Please try again.');
+      
+      if (err.response && err.response.data) {
+        setError(err.response.data.detail || 'Registration failed. Please try again.');
+      } else {
+        setError('Registration failed. Please try again.');
+      }
+      
       return false;
     } finally {
       setLoading(false);

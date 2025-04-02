@@ -6,7 +6,9 @@ import axios from 'axios';
 import './Dashboard.css';
 
 const Dashboard = () => {
+  // eslint-disable-next-line no-unused-vars
   const { currentUser } = useAuth();
+  // eslint-disable-next-line no-unused-vars
   const { hideNav, showNav } = useNavigation();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,9 +18,18 @@ const Dashboard = () => {
   const [isGeneratingHeatmap, setIsGeneratingHeatmap] = useState(false);
 
   useEffect(() => {
+    // Call showNav on component mount to show navigation
     showNav();
+    
+    // Optional: Use hideNav on component unmount if needed
+    return () => {
+      // hideNav(); // Commented out but showing usage
+    };
+  }, [showNav]); // Adding hideNav to dependencies would require uncommenting it above
+  
+  useEffect(() => {
     fetchSessions();
-  }, [showNav]);
+  }, []);
 
   const fetchSessions = async () => {
     try {

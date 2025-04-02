@@ -24,13 +24,19 @@ const Login = () => {
     setIsSubmitting(true);
     setFormError('');
     
+    console.log('Attempting login with username:', username);
+    
     try {
       const success = await login(username, password);
       if (success) {
+        console.log('Login successful, navigating to dashboard');
         navigate('/dashboard');
+      } else {
+        console.log('Login failed');
+        // The error state is managed by the AuthContext
       }
     } catch (err) {
-      console.error('Login error:', err);
+      console.error('Login component error:', err);
       setFormError('An unexpected error occurred');
     } finally {
       setIsSubmitting(false);
@@ -86,6 +92,9 @@ const Login = () => {
         
         <div className="login-footer">
           <p>Don't have an account? <Link to="/register">Sign up</Link></p>
+          <p className="demo-credentials">
+            <small>Demo credentials: <strong>testuser</strong> / <strong>password</strong></small>
+          </p>
         </div>
       </div>
     </div>
