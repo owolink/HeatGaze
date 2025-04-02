@@ -210,4 +210,9 @@ async def get_demo_page(request: Request, page_name: str):
     try:
         return templates.TemplateResponse(f"{page_name}.html", {"request": request})
     except Exception as e:
-        raise HTTPException(status_code=404, detail=f"Page {page_name} not found") 
+        raise HTTPException(status_code=404, detail=f"Page {page_name} not found")
+
+@router.get("/demo", response_class=HTMLResponse)
+async def demo_page(request: Request):
+    """Demo page for GazeCloudAPI integration"""
+    return templates.TemplateResponse("demo.html", {"request": request}) 

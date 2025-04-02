@@ -48,11 +48,11 @@ takeScreenshotButton.addEventListener('click', takeScreenshot);
 analyzeButton.addEventListener('click', showAnalysis);
 
 // Configure GazeCloud API
-GazeCloudAPI.OnResult = handleGazeData;
-GazeCloudAPI.OnCalibrationComplete = handleCalibrationComplete;
-GazeCloudAPI.OnCamDenied = handleCamDenied;
-GazeCloudAPI.OnError = handleError;
-GazeCloudAPI.UseClickRecalibration = true;
+// GazeCloudAPI.OnResult = handleGazeData;
+// GazeCloudAPI.OnCalibrationComplete = handleCalibrationComplete;
+// GazeCloudAPI.OnCamDenied = handleCamDenied;
+// GazeCloudAPI.OnError = handleError;
+// GazeCloudAPI.UseClickRecalibration = true;
 
 // Filter buttons
 document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -523,4 +523,97 @@ function updateStatsDisplay(stats, filterType) {
             <p class="stat-description">Корреляции между цветовыми каналами могут выявить интересные паттерны в тепловой карте.</p>
         `;
     }
-} 
+}
+
+function PlotGaze(GazeData) {
+    // Update UI elements if they exist
+    const gazeDataEl = document.getElementById("GazeData");
+    const headPhoseDataEl = document.getElementById("HeadPhoseData");
+    const headRotDataEl = document.getElementById("HeadRotData");
+    
+    if (gazeDataEl) gazeDataEl.innerHTML = "GazeX: " + GazeData.GazeX + " GazeY: " + GazeData.GazeY;
+    if (headPhoseDataEl) headPhoseDataEl.innerHTML = " HeadX: " + GazeData.HeadX + " HeadY: " + GazeData.HeadY + " HeadZ: " + GazeData.HeadZ;
+    if (headRotDataEl) headRotDataEl.innerHTML = " Yaw: " + GazeData.HeadYaw + " Pitch: " + GazeData.HeadPitch + " Roll: " + GazeData.HeadRoll;
+
+    // Update gaze point position
+    var x = GazeData.docX;
+    var y = GazeData.docY;
+    var gaze = document.getElementById("gaze");
+    if (gaze) {
+        x -= gaze.clientWidth/2;
+        y -= gaze.clientHeight/2;
+        gaze.style.left = x + "px";
+        gaze.style.top = y + "px";
+
+        // Show/hide gaze point based on state
+        if(GazeData.state != 0) {
+            if(gaze.style.display == 'block')
+                gaze.style.display = 'none';
+        } else {
+            if(gaze.style.display == 'none')
+                gaze.style.display = 'block';
+        }
+    }
+
+    // Add data to our collection for batch processing
+    if (currentSession && currentSession.id && !isCalibrating && isRecording) {
+        // Add gaze point to local array
+        gazeData.push({
+            timestamp: GazeData.time,
+            x: GazeData.docX,
+            y: GazeData.docY,
+            state: GazeData.state,
+            url: demoFrame ? demoFrame.contentWindow.location.href : window.location.href
+        });
+        
+        // If we've collected a batch of points, send them to the server
+        if (gazeData.length >= 50) {
+            sendGazeData();
+        }
+    }
+}
+
+// Use the GazeCloudAPI callbacks
+window.addEventListener("load", function() {
+    GazeCloudAPI.OnCalibrationComplete = function() { 
+        console.log('Gaze Calibration Complete');
+        isCalibrating = false;
+        isRecording = true;
+        
+        // Show demo site section
+        document.querySelectorAll('section').forEach(section => {
+            section.style.display = 'none';
+        });
+        demoSite.style.display = 'block';
+        
+        // Start batch sending gaze data to server periodically
+        setInterval(() => {
+            if (isRecording && gazeData.length > 0) {
+                sendGazeData();
+            }
+        }, 2000);
+        
+        // Update UI to show tracking is active
+        const calibrationStatus = document.getElementById('calibrationStatus');
+        if (calibrationStatus) {
+            calibrationStatus.textContent = 'Calibration Complete - Tracking Active';
+        }
+    };
+    
+    GazeCloudAPI.OnCamDenied = function() { 
+        console.log('Camera access denied');
+        alert('Camera access is required for eye tracking. Please allow camera access and refresh the page.');
+        
+        handleCamDenied(); // Call the original handler to maintain app state
+    };
+    
+    GazeCloudAPI.OnError = function(msg) { 
+        console.error('GazeCloudAPI Error:', msg);
+        alert('Error with eye tracking: ' + msg);
+        
+        handleError(msg); // Call the original handler to maintain app state
+    };
+    
+    GazeCloudAPI.UseClickRecalibration = true;
+    GazeCloudAPI.OnResult = PlotGaze;
+}); 

@@ -23,16 +23,35 @@
     </header>
 
     <main>
-        <section class="hero">
-            <div class="container">
-                <h2>Анализ тепловых карт в реальном времени</h2>
-                <p>Отслеживайте взгляд пользователя, создавайте тепловые карты и анализируйте данные для улучшения UX/UI вашего веб-сайта</p>
-                <div class="buttons">
-                    <button id="startButton" class="btn btn-primary">Начать отслеживание</button>
-                    <button id="stopButton" class="btn btn-secondary" disabled>Остановить</button>
+        <div class="container mt-4">
+            <!-- Hero section for initial page load -->
+            <section class="hero">
+                <div class="jumbotron">
+                    <h1 class="display-4">HeatGaze - Анализ тепловых карт в реальном времени</h1>
+                    <p class="lead">Отслеживайте взгляд пользователя и анализируйте данные с помощью тепловых карт</p>
+                    <hr class="my-4">
+                    <p>Нажмите кнопку ниже, чтобы начать отслеживание взгляда</p>
+                    <button id="startButton" class="btn btn-primary btn-lg">Начать отслеживание</button>
                 </div>
+            </section>
+
+            <!-- Calibration section -->
+            <section id="calibration" style="display: none;">
+                <div class="text-center">
+                    <h2>Калибровка</h2>
+                    <p id="calibrationStatus">Пожалуйста, следуйте инструкциям на экране для калибровки...</p>
+                    <button id="stopButton" class="btn btn-danger mt-3" disabled>Остановить отслеживание</button>
+                </div>
+            </section>
+            
+            <!-- Gaze visualization elements -->
+            <div id="gaze" style="position: absolute; display: none; width: 20px; height: 20px; border-radius: 50%; border: solid 2px rgba(255, 0, 0, 0.7); box-shadow: 0 0 15px 3px rgba(255, 0, 0, 0.3); pointer-events: none; z-index: 999999;"></div>
+            
+            <div style="position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px; font-family: monospace; z-index: 9999; display: none;">
+                <p id="GazeData" style="margin: 0;"></p>
+                <p id="HeadPhoseData" style="margin: 0;"></p>
+                <p id="HeadRotData" style="margin: 0;"></p>
             </div>
-        </section>
 
         <section id="demoSite" class="demo-site" style="display: none;">
             <div class="container">
@@ -45,14 +64,6 @@
                 <div class="demo-frame-container">
                     <iframe name="demoFrame" id="demoFrame" src="/api/demo/news-page"></iframe>
                 </div>
-            </div>
-        </section>
-
-        <section id="calibration" class="calibration" style="display: none;">
-            <div class="container">
-                <h3>Калибровка</h3>
-                <p>Следуйте за точкой для калибровки отслеживания взгляда</p>
-                <div id="calibrationContainer"></div>
             </div>
         </section>
 
