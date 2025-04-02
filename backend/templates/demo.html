@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GazeCloud API Demo</title>
+    <script src="https://api.gazerecorder.com/GazeCloudAPI.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        .data-display {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        #gaze {
+            position: absolute;
+            display: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: solid 2px rgba(255, 0, 0, 0.7);
+            box-shadow: 0 0 15px 3px rgba(255, 0, 0, 0.3);
+            pointer-events: none;
+            z-index: 999999;
+        }
+        .content {
+            margin-top: 40px;
+        }
+        .test-area {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .box {
+            height: 200px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .box:hover {
+            background-color: #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GazeCloud API Integration Demo</h1>
+        
+        <div class="controls">
+            <button id="startButton" onclick="GazeCloudAPI.StartEyeTracking();">Start Eye Tracking</button>
+            <button id="stopButton" onclick="GazeCloudAPI.StopEyeTracking();">Stop Eye Tracking</button>
+        </div>
+        
+        <div class="status" id="status">
+            Status: Ready to track
+        </div>
+        
+        <div class="data-display">
+            <p id="GazeData">GazeX: - GazeY: -</p>
+            <p id="HeadPhoseData">HeadX: - HeadY: - HeadZ: -</p>
+            <p id="HeadRotData">Yaw: - Pitch: - Roll: -</p>
+        </div>
+        
+        <div class="content">
+            <h2>Test Your Eye Tracking</h2>
+            <p>Look at different elements below and observe how the red dot follows your gaze.</p>
+            
+            <div class="test-area">
+                <div class="box" id="box1">Box 1</div>
+                <div class="box" id="box2">Box 2</div>
+                <div class="box" id="box3">Box 3</div>
+                <div class="box" id="box4">Box 4</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Gaze visualization element -->
+    <div id="gaze"></div>
+    
+    <script>
+        // PlotGaze function for visualizing gaze data
+        function PlotGaze(GazeData) {
+            // Update data display
+            document.getElementById("GazeData").innerHTML = "GazeX: " + GazeData.GazeX.toFixed(2) + " GazeY: " + GazeData.GazeY.toFixed(2);
+            document.getElementById("HeadPhoseData").innerHTML = "HeadX: " + GazeData.HeadX.toFixed(2) + " HeadY: " + GazeData.HeadY.toFixed(2) + " HeadZ: " + GazeData.HeadZ.toFixed(2);
+            document.getElementById("HeadRotData").innerHTML = "Yaw: " + GazeData.HeadYaw.toFixed(2) + " Pitch: " + GazeData.HeadPitch.toFixed(2) + " Roll: " + GazeData.HeadRoll.toFixed(2);
+            
+            // Update gaze point position
+            var x = GazeData.docX;
+            var y = GazeData.docY;
+            var gaze = document.getElementById("gaze");
+            x -= gaze.clientWidth/2;
+            y -= gaze.clientHeight/2;
+            
+            gaze.style.left = x + "px";
+            gaze.style.top = y + "px";
+            
+            // Show/hide gaze point based on state
+            if (GazeData.state != 0) {
+                if (gaze.style.display == 'block')
+                    gaze.style.display = 'none';
+            } else {
+                if (gaze.style.display == 'none')
+                    gaze.style.display = 'block';
+            }
+        }
+        
+        // Set up GazeCloudAPI callbacks
+        window.addEventListener("load", function() {
+            GazeCloudAPI.OnCalibrationComplete = function() {
+                console.log('Gaze Calibration Complete');
+                document.getElementById('status').innerHTML = 'Status: Calibration Complete - Tracking Active';
+                document.getElementById('status').style.borderColor = '#28a745';
+            };
+            
+            GazeCloudAPI.OnCamDenied = function() {
+                console.log('Camera access denied');
+                document.getElementById('status').innerHTML = 'Status: Camera access denied';
+                document.getElementById('status').style.borderColor = '#dc3545';
+                alert('Camera access is required for eye tracking. Please allow camera access and refresh the page.');
+            };
+            
+            GazeCloudAPI.OnError = function(msg) {
+                console.error('GazeCloudAPI Error:', msg);
+                document.getElementById('status').innerHTML = 'Status: Error - ' + msg;
+                document.getElementById('status').style.borderColor = '#dc3545';
+            };
+            
+            GazeCloudAPI.UseClickRecalibration = true;
+            GazeCloudAPI.OnResult = PlotGaze;
+        });
+        
+        // Track interactions with boxes for demonstration
+        document.querySelectorAll('.box').forEach(box => {
+            box.addEventListener('click', function() {
+                this.style.backgroundColor = getRandomColor();
+            });
+        });
+        
+        // Helper function for generating random colors
+        function getRandomColor() {
+            const colors = ['#f8d7da', '#d4edda', '#cce5ff', '#fff3cd'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+    </script>
+</body>
+</html> 
