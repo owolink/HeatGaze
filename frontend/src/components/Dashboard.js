@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../context/NavigationContext';
-import axios from 'axios';
+import api from '../utils/api';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -33,11 +32,23 @@ const Dashboard = () => {
 
   const fetchSessions = async () => {
     try {
-      const response = await axios.get('/api/sessions');
+      setLoading(true);
+      setError(null);
+      
+      console.log('Fetching sessions...');
+      const response = await api.get('/api/sessions');
       setSessions(response.data);
+      console.log('Sessions fetched successfully:', response.data);
     } catch (err) {
       console.error('Error fetching sessions:', err);
-      setError('Не удалось загрузить сессии. Пожалуйста, попробуйте позже.');
+      
+      // Handle authentication errors
+      if (err.response && err.response.status === 401) {
+        setError('Authentication error. Please log in again.');
+        // Note: The redirect is now handled by the API interceptor
+      } else {
+        setError('Failed to load sessions. Please try again later.');
+      }
     } finally {
       setLoading(false);
     }
@@ -47,7 +58,7 @@ const Dashboard = () => {
     setSelectedSession(session);
     setIsGeneratingHeatmap(true);
     try {
-      const response = await axios.get(`/api/sessions/${session.id}/heatmap`);
+      const response = await api.get(`/api/sessions/${session.id}/heatmap`);
       setHeatmapData(response.data);
     } catch (err) {
       console.error('Error generating heatmap:', err);
@@ -67,6 +78,27 @@ const Dashboard = () => {
     });
   };
 
+  const formatDuration = (seconds) => {
+    if (!seconds) return '0 сек';
+    
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    
+    if (minutes > 0) {
+      return `${minutes} мин ${remainingSeconds} сек`;
+    } else {
+      return `${seconds} сек`;
+    }
+  };
+  
+  const calculateSessionDuration = (session) => {
+    if (!session.updated_at) return 0;
+    
+    const startTime = new Date(session.created_at).getTime();
+    const endTime = new Date(session.updated_at).getTime();
+    return Math.floor((endTime - startTime) / 1000); // Convert ms to seconds
+  };
+
   if (loading) {
     return (
       <div className="dashboard-container">
@@ -80,15 +112,15 @@ const Dashboard = () => {
     <div className="dashboard-container">
       <div className="dashboard-header">
         <h1>Панель управления</h1>
-        <p>Управление сессиями отслеживания глаз</p>
+        <p>Анализ данных и тепловых карт отслеживания взгляда</p>
       </div>
 
       <div className="dashboard-actions">
-        <Link to="/recording" className="action-card">
+        <a href="http://localhost:8000" target="_blank" rel="noopener noreferrer" className="action-card">
           <div className="action-icon">🎥</div>
-          <h3>Новая запись</h3>
-          <p>Записывайте движения глаз на любом сайте</p>
-        </Link>
+          <h3>Создать новую запись</h3>
+          <p>Перейдите на сайт записи для создания новых сессий отслеживания взгляда</p>
+        </a>
         
         <div className="action-card">
           <div className="action-icon">📊</div>
@@ -105,7 +137,7 @@ const Dashboard = () => {
 
       <div className="sessions-container">
         <div className="sessions-header">
-          <h2>Ваши сессии</h2>
+          <h2>Ваши записанные сессии</h2>
           <span className="sessions-count">{sessions.length} sessions</span>
         </div>
 
@@ -115,9 +147,9 @@ const Dashboard = () => {
           {sessions.length === 0 ? (
             <div className="no-sessions">
               <p>У вас пока нет записанных сессий</p>
-              <Link to="/recording" className="start-button">
-                Start Your First Recording
-              </Link>
+              <a href="http://localhost:8000" target="_blank" rel="noopener noreferrer" className="start-button">
+                Записать вашу первую сессию
+              </a>
             </div>
           ) : (
             <div className="sessions-grid">
@@ -129,7 +161,7 @@ const Dashboard = () => {
                 >
                   <h3>{session.name}</h3>
                   <p>Создано: {formatDate(session.created_at)}</p>
-                  <p>Длительность: {session.duration || '0'} сек</p>
+                  <p>Длительность: {formatDuration(calculateSessionDuration(session))}</p>
                 </div>
               ))}
             </div>
@@ -144,17 +176,22 @@ const Dashboard = () => {
                 <div className="loading-spinner"></div>
                 <p>Генерация тепловой карты...</p>
               </div>
-            ) : heatmapData ? (
+            ) : heatmapData && heatmapData.image ? (
               <div className="heatmap-container">
-                <img
-                  src={`data:image/png;base64,${heatmapData.image}`}
-                  alt="Тепловая карта"
-                  className="heatmap-image"
-                />
+                <div className="heatmap-image-wrapper">
+                  <img
+                    src={`data:image/png;base64,${heatmapData.image}`}
+                    alt="Тепловая карта"
+                    className="heatmap-image"
+                  />
+                </div>
                 <div className="heatmap-info">
                   <p><strong>Сессия:</strong> {selectedSession.name}</p>
                   <p><strong>Дата:</strong> {formatDate(selectedSession.created_at)}</p>
-                  <p><strong>Точек данных:</strong> {heatmapData.pointCount}</p>
+                  <p><strong>Точек данных:</strong> {heatmapData.stats.pointCount}</p>
+                  <p><strong>Области фокуса:</strong> {heatmapData.stats.focus_areas}</p>
+                  <p><strong>Оценка внимания:</strong> {heatmapData.stats.attention_score}%</p>
+                  <p><strong>Покрытие:</strong> {Math.round(heatmapData.stats.coverage * 100)}%</p>
                 </div>
               </div>
             ) : (

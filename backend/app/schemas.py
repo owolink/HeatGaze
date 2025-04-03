@@ -17,6 +17,13 @@ class SessionResponse(BaseModel):
     class Config:
         from_attributes = True
 
+    def get_session_duration(self) -> int:
+        """Calculate session duration in seconds"""
+        if not self.updated_at:
+            return 0
+        delta = self.updated_at - self.created_at
+        return int(delta.total_seconds())
+
 # Gaze data point schemas
 class GazeDataPoint(BaseModel):
     timestamp: int  # milliseconds since epoch

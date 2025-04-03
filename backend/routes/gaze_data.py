@@ -69,12 +69,19 @@ class ScreenshotOut(BaseModel):
 
 # Routes
 @router.post("/sessions", response_model=SessionResponse)
-async def create_session(session: SessionCreate, db: Session = Depends(get_db)):
+async def create_session(
+    session: SessionCreate, 
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Create a new eye tracking session"""
+    current_time = datetime.now()
     db_session = SessionModel(
         name=session.name,
         device_info=session.deviceInfo,
-        created_at=datetime.now()
+        created_at=current_time,
+        updated_at=current_time,  # Set initial updated_at to match created_at
+        user_id=current_user.id  # Associate session with authenticated user
     )
     db.add(db_session)
     db.commit()
@@ -82,24 +89,46 @@ async def create_session(session: SessionCreate, db: Session = Depends(get_db)):
     return db_session
 
 @router.get("/sessions", response_model=List[SessionResponse])
-async def get_sessions(db: Session = Depends(get_db)):
-    """Get all sessions"""
-    sessions = db.query(SessionModel).order_by(SessionModel.created_at.desc()).all()
+async def get_sessions(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all sessions for the authenticated user"""
+    sessions = db.query(SessionModel).filter(
+        SessionModel.user_id == current_user.id
+    ).order_by(SessionModel.created_at.desc()).all()
     return sessions
 
 @router.get("/sessions/{session_id}", response_model=SessionResponse)
-async def get_session(session_id: int, db: Session = Depends(get_db)):
-    """Get a specific session by ID"""
-    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+async def get_session(
+    session_id: int, 
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get a specific session by ID if it belongs to the authenticated user"""
+    session = db.query(SessionModel).filter(
+        SessionModel.id == session_id,
+        SessionModel.user_id == current_user.id
+    ).first()
+    
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     return session
 
 @router.post("/sessions/{session_id}/data")
-async def add_gaze_data(session_id: int, data: GazeDataCreate, db: Session = Depends(get_db)):
+async def add_gaze_data(
+    session_id: int, 
+    data: GazeDataCreate, 
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Add gaze data to a session"""
-    # Check if session exists
-    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+    # Check if session exists and belongs to user
+    session = db.query(SessionModel).filter(
+        SessionModel.id == session_id,
+        SessionModel.user_id == current_user.id
+    ).first()
+    
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     
@@ -206,10 +235,14 @@ async def add_gaze_point(
 async def add_gaze_points_batch(
     session_id: int,
     gaze_points: List[dict] = Body(...),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Check if session exists
-    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+    # Check if session exists and belongs to user
+    session = db.query(SessionModel).filter(
+        SessionModel.id == session_id,
+        SessionModel.user_id == current_user.id
+    ).first()
     
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -240,11 +273,15 @@ async def add_gaze_points_batch(
 @router.get("/sessions/{session_id}/gaze", response_model=List[dict])
 async def get_gaze_points(
     session_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get all gaze points for a session"""
-    # Check if session exists
-    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+    # Check if session exists and belongs to user
+    session = db.query(SessionModel).filter(
+        SessionModel.id == session_id,
+        SessionModel.user_id == current_user.id
+    ).first()
     
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -345,10 +382,14 @@ async def get_screenshots(
 @router.put("/sessions/{session_id}/end", response_model=SessionResponse)
 async def end_session(
     session_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Check if session exists
-    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+    # Check if session exists and belongs to the user
+    session = db.query(SessionModel).filter(
+        SessionModel.id == session_id,
+        SessionModel.user_id == current_user.id
+    ).first()
     
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -358,16 +399,20 @@ async def end_session(
     db.commit()
     db.refresh(session)
     
-    return session 
+    return session
 
 @router.post("/sessions/{session_id}/screenshots", response_model=ScreenshotResponse)
 async def add_screenshot(
     session_id: int,
     screenshot_data: ScreenshotCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Check if session exists
-    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+    # Check if session exists and belongs to the user
+    session = db.query(SessionModel).filter(
+        SessionModel.id == session_id,
+        SessionModel.user_id == current_user.id
+    ).first()
     
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -414,16 +459,18 @@ async def add_screenshot(
 @router.get("/sessions/{session_id}/screenshots", response_model=List[ScreenshotResponse])
 async def get_screenshots(
     session_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get all screenshots for a session"""
-    # Check if session exists
-    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+    # Check if session exists and belongs to the user
+    session = db.query(SessionModel).filter(
+        SessionModel.id == session_id,
+        SessionModel.user_id == current_user.id
+    ).first()
     
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     
-    # Get all screenshots for the session
     screenshots = db.query(Screenshot).filter(Screenshot.session_id == session_id).all()
     
     return screenshots 

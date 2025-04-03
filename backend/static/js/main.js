@@ -67,21 +67,41 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 // Main functions
 async function startTracking() {
     try {
+        // Get authentication token from localStorage
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+            // Redirect to login if no token found
+            console.error('No authentication token found');
+            window.location.href = '/login';
+            return;
+        }
+        
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+        
         // Create a new session
         const response = await fetch('/api/sessions', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: headers,
             body: JSON.stringify({
                 name: `Session ${new Date().toLocaleString()}`,
-                screen_width: window.innerWidth,
-                screen_height: window.innerHeight
+                deviceInfo: navigator.userAgent
             })
         });
 
         if (!response.ok) {
-            throw new Error('Failed to create session');
+            if (response.status === 401) {
+                // Redirect to login if unauthorized
+                console.error('Authentication error: Token expired or invalid');
+                localStorage.removeItem('token'); // Clear invalid token
+                window.location.href = '/login';
+                return;
+            }
+            const errorText = await response.text();
+            throw new Error(`Failed to create session: ${response.status} ${errorText}`);
         }
 
         currentSession = await response.json();
@@ -94,11 +114,43 @@ async function startTracking() {
         });
         calibration.style.display = 'block';
         
-        // Start calibration
-        isCalibrating = true;
-        GazeCloudAPI.StartEyeTracking();
-        startButton.disabled = true;
-        stopButton.disabled = false;
+        // Check if GazeCloudAPI is defined
+        if (typeof GazeCloudAPI === 'undefined') {
+            console.error('GazeCloudAPI is not defined. Using fallback mode.');
+            alert('Eye tracking API is not available. The application will run with limited functionality.');
+            
+            // Skip calibration and go directly to demo site
+            isCalibrating = false;
+            isRecording = true;
+            
+            document.querySelectorAll('section').forEach(section => {
+                section.style.display = 'none';
+            });
+            demoSite.style.display = 'block';
+            
+            startButton.disabled = true;
+            stopButton.disabled = false;
+        } else {
+            // Start calibration with GazeCloudAPI
+            isCalibrating = true;
+            try {
+                GazeCloudAPI.StartEyeTracking();
+            } catch (error) {
+                console.error('Error starting GazeCloudAPI:', error);
+                alert('Error starting eye tracking. The application will run with limited functionality.');
+                
+                // Skip calibration and go directly to demo site
+                isCalibrating = false;
+                isRecording = true;
+                
+                document.querySelectorAll('section').forEach(section => {
+                    section.style.display = 'none';
+                });
+                demoSite.style.display = 'block';
+            }
+            startButton.disabled = true;
+            stopButton.disabled = false;
+        }
         
     } catch (error) {
         console.error('Error starting tracking:', error);
@@ -107,19 +159,48 @@ async function startTracking() {
 }
 
 function stopTracking() {
-    // Stop eye tracking
-    GazeCloudAPI.StopEyeTracking();
+    // Stop eye tracking if API is available
+    if (typeof GazeCloudAPI !== 'undefined') {
+        try {
+            GazeCloudAPI.StopEyeTracking();
+        } catch (error) {
+            console.error('Error stopping GazeCloudAPI:', error);
+        }
+    }
+    
     isRecording = false;
     stopButton.disabled = true;
     
     // End the session
     if (currentSession) {
+        // Get authentication token from localStorage
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+            console.error('No authentication token found when ending session');
+            window.location.href = '/login';
+            return;
+        }
+        
         fetch(`/api/sessions/${currentSession.id}/end`, {
-            method: 'PUT'
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
         }).then(response => {
             if (!response.ok) {
+                if (response.status === 401) {
+                    // Redirect to login if unauthorized
+                    console.error('Authentication error: Token expired or invalid');
+                    localStorage.removeItem('token'); // Clear invalid token
+                    window.location.href = '/login';
+                    return;
+                }
                 console.error('Failed to end session properly');
             }
+        }).catch(error => {
+            console.error('Error ending session:', error);
         });
     }
     
@@ -195,11 +276,20 @@ async function sendGazeData() {
     gazeData = [];
     
     try {
+        // Get authentication token from localStorage if available
+        const token = localStorage.getItem('token');
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        
+        // Add token to headers if available
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
         const response = await fetch(`/api/sessions/${currentSession.id}/gaze/batch`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: headers,
             body: JSON.stringify(pointsToSend)
         });
         
@@ -207,6 +297,13 @@ async function sendGazeData() {
             // If failed, add the points back to the queue
             gazeData = [...pointsToSend, ...gazeData];
             console.error('Failed to send gaze data batch');
+            
+            if (response.status === 401) {
+                // Stop recording if unauthorized
+                stopTracking();
+                alert('Ваша сессия истекла. Пожалуйста, войдите снова.');
+                window.location.href = '/login';
+            }
         }
     } catch (error) {
         // If failed, add the points back to the queue
@@ -527,18 +624,22 @@ function updateStatsDisplay(stats, filterType) {
 }
 
 function PlotGaze(GazeData) {
-    // Update UI elements if they exist
-    const gazeDataEl = document.getElementById("GazeData");
-    const headPhoseDataEl = document.getElementById("HeadPhoseData");
-    const headRotDataEl = document.getElementById("HeadRotData");
-    
-    if (gazeDataEl) gazeDataEl.innerHTML = "GazeX: " + GazeData.GazeX + " GazeY: " + GazeData.GazeY;
-    if (headPhoseDataEl) headPhoseDataEl.innerHTML = " HeadX: " + GazeData.HeadX + " HeadY: " + GazeData.HeadY + " HeadZ: " + GazeData.HeadZ;
-    if (headRotDataEl) headRotDataEl.innerHTML = " Yaw: " + GazeData.HeadYaw + " Pitch: " + GazeData.HeadPitch + " Roll: " + GazeData.HeadRoll;
+    // Check if GazeData is defined (might not be in fallback mode)
+    if (!GazeData) {
+        console.log('PlotGaze called but GazeData is undefined');
+        return;
+    }
 
-    // Update gaze point position
+    // Display gaze data
+    var gazedataDiv = document.getElementById("GazeData");
+    if(gazedataDiv) {
+        gazedataDiv.innerHTML = "GazeX: " + GazeData.GazeX + " GazeY: " + GazeData.GazeY;
+    }
+
+    // Plot gaze position
     var x = GazeData.docX;
     var y = GazeData.docY;
+    
     var gaze = document.getElementById("gaze");
     if (gaze) {
         x -= gaze.clientWidth/2;
@@ -576,6 +677,12 @@ function PlotGaze(GazeData) {
 
 // Use the GazeCloudAPI callbacks
 window.addEventListener("load", function() {
+    // Check if GazeCloudAPI is defined
+    if (typeof GazeCloudAPI === 'undefined') {
+        console.warn('GazeCloudAPI is not available at load time');
+        return;
+    }
+    
     GazeCloudAPI.OnCalibrationComplete = function() { 
         console.log('Gaze Calibration Complete');
         isCalibrating = false;

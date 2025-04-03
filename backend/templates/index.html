@@ -6,7 +6,45 @@
     <title>HeatGaze - Анализ тепловых карт в реальном времени</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/styles.css">
-    <script src="https://api.gazerecorder.com/GazeCloudAPI.js"></script>
+    <!-- GazeCloud API Script with fallback and error handling -->
+    <script>
+        // Define a variable to track if GazeCloudAPI script loaded
+        window.gazeCloudApiLoaded = false;
+        
+        // Create a timeout to check if the script loaded
+        window.gazeCloudApiTimeout = setTimeout(function() {
+            if (!window.gazeCloudApiLoaded && typeof GazeCloudAPI === 'undefined') {
+                console.error('GazeCloudAPI failed to load within the timeout period');
+                
+                // Implement a fallback mock for GazeCloudAPI if needed
+                if (typeof GazeCloudAPI === 'undefined') {
+                    window.GazeCloudAPI = {
+                        StartEyeTracking: function() {
+                            console.log('Mock GazeCloudAPI.StartEyeTracking called');
+                            // Trigger the calibration complete event to progress the UI
+                            setTimeout(function() {
+                                if (typeof GazeCloudAPI.OnCalibrationComplete === 'function') {
+                                    GazeCloudAPI.OnCalibrationComplete();
+                                }
+                            }, 2000);
+                        },
+                        StopEyeTracking: function() {
+                            console.log('Mock GazeCloudAPI.StopEyeTracking called');
+                        },
+                        OnResult: null,
+                        OnCalibrationComplete: null,
+                        OnCamDenied: null,
+                        OnError: null,
+                        UseClickRecalibration: true
+                    };
+                }
+                
+                // Create an alert to inform the user
+                alert('GazeCloudAPI could not be loaded. The application will run in fallback mode with limited functionality.');
+            }
+        }, 10000); // 10 second timeout
+    </script>
+    <script src="https://api.gazerecorder.com/GazeCloudAPI.js" onerror="console.error('Failed to load GazeCloudAPI.js')" onload="window.gazeCloudApiLoaded = true; clearTimeout(window.gazeCloudApiTimeout);"></script>
 </head>
 <body>
     <!-- <header class="header">
@@ -29,7 +67,7 @@
                 <div class="jumbotron">
                     <h1 class="display-4">HeatGaze - Анализ тепловых карт в реальном времени</h1>
                     <p class="lead">Отслеживайте взгляд пользователя и анализируйте данные с помощью тепловых карт</p>
-                    <hr class="my-4">
+                    <!-- <hr class="my-4"> -->
                     <p>Нажмите кнопку ниже, чтобы начать отслеживание взгляда</p>
                     <button id="startButton" class="btn btn-primary btn-lg">Начать отслеживание</button>
                 </div>
@@ -130,5 +168,39 @@
     </footer>
 
     <script src="/static/js/main.js"></script>
+    
+    <script>
+        // Check if user is authenticated
+        window.addEventListener('DOMContentLoaded', async function() {
+            // Get token from localStorage
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                // Redirect to login page if no token
+                window.location.href = '/login';
+                return;
+            }
+            
+            try {
+                // Check if token is valid
+                const response = await fetch('/api/check-auth', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (!data.authenticated) {
+                    // Redirect to login page if not authenticated
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('Error checking authentication:', error);
+                // Redirect to login page on error
+                window.location.href = '/login';
+            }
+        });
+    </script>
 </body>
 </html> 

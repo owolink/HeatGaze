@@ -1,10 +1,13 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, HTTPException, Depends, Request, status
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from app.utils import get_db
 from sqlalchemy.orm import Session
 from app.models import User
-from routes.auth import get_current_user
+from routes.auth import get_current_user, oauth2_scheme
+from fastapi.security import OAuth2PasswordBearer
+from fastapi import Cookie, Header
+from typing import Optional
 from datetime import datetime
 import random
 
@@ -206,13 +209,116 @@ async def get_weather_page(request: Request):
 
 @router.get("/demo/{page_name}", response_class=HTMLResponse)
 async def get_demo_page(request: Request, page_name: str):
-    """Serve demo pages"""
+    """Render a demo page for eye tracking"""
     try:
-        return templates.TemplateResponse(f"{page_name}.html", {"request": request})
-    except Exception as e:
-        raise HTTPException(status_code=404, detail=f"Page {page_name} not found")
+        return templates.TemplateResponse(f"demo/{page_name}.html", {"request": request})
+    except Exception:
+        return templates.TemplateResponse("404.html", {"request": request, "message": "Демо-страница не найдена"}, status_code=404)
 
 @router.get("/demo", response_class=HTMLResponse)
 async def demo_page(request: Request):
     """Demo page for GazeCloudAPI integration"""
-    return templates.TemplateResponse("demo.html", {"request": request}) 
+    return templates.TemplateResponse("demo.html", {"request": request})
+
+@router.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    """Render the login page"""
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@router.get("/check-auth")
+async def check_auth(token: Optional[str] = Header(None, alias="Authorization")):
+    """Check if user is authenticated"""
+    if not token or not token.startswith("Bearer "):
+        return {"authenticated": False, "error": "No token provided"}
+    
+    # Strip 'Bearer ' from the token
+    token = token.replace("Bearer ", "")
+    
+    try:
+        # This will throw an exception if the token is invalid
+        from routes.auth import get_current_user_from_token
+        user = get_current_user_from_token(token)
+        return {"authenticated": True, "username": user.username, "user_id": user.id}
+    except Exception as e:
+        return {"authenticated": False, "error": str(e)}
+
+# News page data
+_news_items = [
+    {
+        "title": "Новые исследования в области отслеживания взгляда",
+        "content": "Исследователи из MIT разработали новый алгоритм для более точного отслеживания движения глаз...",
+        "image": "/static/images/demo/news1.jpg",
+        "date": "2023-08-15"
+    },
+    {
+        "title": "Применение технологий отслеживания взгляда в медицине",
+        "content": "Новые методы диагностики заболеваний с помощью анализа движений глаз показывают обнадеживающие результаты...",
+        "image": "/static/images/demo/news2.jpg",
+        "date": "2023-08-12"
+    },
+    {
+        "title": "Улучшение пользовательского опыта с помощью тепловых карт",
+        "content": "Крупные интернет-магазины сообщают о значительном улучшении конверсии после применения технологий анализа тепловых карт...",
+        "image": "/static/images/demo/news3.jpg",
+        "date": "2023-08-10"
+    },
+    {
+        "title": "Конференция по технологиям отслеживания взгляда 2023",
+        "content": "Международная конференция EyeTrack 2023 пройдет в Берлине с 10 по 15 сентября...",
+        "image": "/static/images/demo/news4.jpg",
+        "date": "2023-08-05"
+    }
+]
+
+@router.get("/demo-data/news")
+async def get_news_data():
+    """Get news data for the demo page"""
+    # Randomize news order to create variety
+    import random
+    shuffled_news = _news_items.copy()
+    random.shuffle(shuffled_news)
+    return shuffled_news
+
+# Weather page data
+_weather_data = {
+    "current": {
+        "city": "Москва",
+        "date": "15 Августа 2023",
+        "temp": "24°C",
+        "condition": "Ясно",
+        "icon": "/static/images/demo/weather/sun.svg",
+        "wind": "3 м/с",
+        "humidity": "45%",
+        "pressure": "752 мм рт. ст."
+    },
+    "forecast": [
+        {"day": "Вт", "temp": "24°C", "icon": "/static/images/demo/weather/sun.svg"},
+        {"day": "Ср", "temp": "22°C", "icon": "/static/images/demo/weather/cloudy.svg"},
+        {"day": "Чт", "temp": "19°C", "icon": "/static/images/demo/weather/rain.svg"},
+        {"day": "Пт", "temp": "20°C", "icon": "/static/images/demo/weather/cloudy-sun.svg"},
+        {"day": "Сб", "temp": "25°C", "icon": "/static/images/demo/weather/sun.svg"}
+    ],
+    "cities": [
+        {"city": "Санкт-Петербург", "temp": "19°C", "condition": "Облачно"},
+        {"city": "Новосибирск", "temp": "26°C", "condition": "Ясно"},
+        {"city": "Екатеринбург", "temp": "21°C", "condition": "Переменная облачность"},
+        {"city": "Казань", "temp": "23°C", "condition": "Ясно"}
+    ]
+}
+
+@router.get("/demo-data/weather")
+async def get_weather_data():
+    """Get weather data for the demo page"""
+    # Add some randomization to weather data
+    import random
+    import copy
+    
+    weather = copy.deepcopy(_weather_data)
+    current_temp = int(weather["current"]["temp"].replace("°C", ""))
+    weather["current"]["temp"] = f"{current_temp + random.randint(-2, 2)}°C"
+    
+    for forecast in weather["forecast"]:
+        temp = int(forecast["temp"].replace("°C", ""))
+        forecast["temp"] = f"{temp + random.randint(-1, 1)}°C"
+    
+    return weather 
