@@ -102,7 +102,7 @@ async def token_fallback(request: Request):
     url = request.url
     # Replace the path with /api/token
     redirect_url = str(url).replace("/token", "/api/token")
-    # Return a redirect
+    # Return a redirect with 307 to preserve POST data
     return RedirectResponse(url=redirect_url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 
 @app.get("/", response_class=HTMLResponse)

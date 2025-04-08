@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../context/NavigationContext';
 import api from '../utils/api';
 import './Dashboard.css';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   // eslint-disable-next-line no-unused-vars
@@ -15,6 +16,7 @@ const Dashboard = () => {
   const [selectedSession, setSelectedSession] = useState(null);
   const [heatmapData, setHeatmapData] = useState(null);
   const [isGeneratingHeatmap, setIsGeneratingHeatmap] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Call showNav on component mount to show navigation
@@ -99,6 +101,22 @@ const Dashboard = () => {
     return Math.floor((endTime - startTime) / 1000); // Convert ms to seconds
   };
 
+  const handleActionClick = (action) => {
+    switch (action) {
+      case 'record':
+        navigate('/record');
+        break;
+      case 'heatmap':
+        navigate('/recordings');
+        break;
+      case 'analysis':
+        navigate('/analysis');
+        break;
+      default:
+        break;
+    }
+  };
+
   if (loading) {
     return (
       <div className="dashboard-container">
@@ -122,16 +140,30 @@ const Dashboard = () => {
           <p>Перейдите на сайт записи для создания новых сессий отслеживания взгляда</p>
         </a>
         
-        <div className="action-card">
-          <div className="action-icon">📊</div>
-          <h3>Создать тепловую карту</h3>
-          <p>Генерируйте тепловые карты из ваших сессий</p>
-        </div>
-        
-        <div className="action-card">
-          <div className="action-icon">📈</div>
-          <h3>Аналитика</h3>
-          <p>Просматривайте аналитику данных отслеживания глаз</p>
+        <div className="action-cards">
+          <div className="action-card" onClick={() => handleActionClick('record')}>
+            <div className="action-icon">
+              <i className="fas fa-video"></i>
+            </div>
+            <h3>Начать запись</h3>
+            <p>Записать новую сессию отслеживания взгляда</p>
+          </div>
+          
+          <div className="action-card" onClick={() => handleActionClick('heatmap')}>
+            <div className="action-icon">
+              <i className="fas fa-fire"></i>
+            </div>
+            <h3>Создать тепловую карту</h3>
+            <p>Просмотреть и проанализировать записи сессий</p>
+          </div>
+          
+          <div className="action-card" onClick={() => handleActionClick('analysis')}>
+            <div className="action-icon">
+              <i className="fas fa-chart-bar"></i>
+            </div>
+            <h3>Анализ данных</h3>
+            <p>Подробный анализ собранных данных</p>
+          </div>
         </div>
       </div>
 

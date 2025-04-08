@@ -97,7 +97,34 @@ async def get_sessions(
     sessions = db.query(SessionModel).filter(
         SessionModel.user_id == current_user.id
     ).order_by(SessionModel.created_at.desc()).all()
-    return sessions
+    
+    # Enhance session data with additional fields
+    enhanced_sessions = []
+    for session in sessions:
+        # Count gaze data points
+        gaze_count = db.query(GazeData).filter(GazeData.session_id == session.id).count()
+        
+        # Calculate duration
+        duration = 0
+        if session.updated_at:
+            duration = int((session.updated_at - session.created_at).total_seconds())
+        
+        # Create enhanced session data
+        session_dict = {
+            "id": session.id,
+            "name": session.name,
+            "device_info": session.device_info,
+            "created_at": session.created_at,
+            "updated_at": session.updated_at,
+            "has_recording": gaze_count > 0,
+            "recording_count": gaze_count,
+            "duration": duration,
+            "username": current_user.username
+        }
+        
+        enhanced_sessions.append(session_dict)
+    
+    return enhanced_sessions
 
 @router.get("/sessions/{session_id}", response_model=SessionResponse)
 async def get_session(
@@ -113,7 +140,29 @@ async def get_session(
     
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    return session
+    
+    # Count gaze data points
+    gaze_count = db.query(GazeData).filter(GazeData.session_id == session.id).count()
+    
+    # Calculate duration
+    duration = 0
+    if session.updated_at:
+        duration = int((session.updated_at - session.created_at).total_seconds())
+    
+    # Create enhanced session data
+    session_dict = {
+        "id": session.id,
+        "name": session.name,
+        "device_info": session.device_info,
+        "created_at": session.created_at,
+        "updated_at": session.updated_at,
+        "has_recording": gaze_count > 0,
+        "recording_count": gaze_count,
+        "duration": duration,
+        "username": current_user.username
+    }
+    
+    return session_dict
 
 @router.post("/sessions/{session_id}/data")
 async def add_gaze_data(
@@ -123,6 +172,9 @@ async def add_gaze_data(
     db: Session = Depends(get_db)
 ):
     """Add gaze data to a session"""
+    print(f"Received gaze data for session {session_id}")
+    print(f"Data points count: {len(data.gazeData) if hasattr(data, 'gazeData') else 'No gazeData attribute'}")
+    
     # Check if session exists and belongs to user
     session = db.query(SessionModel).filter(
         SessionModel.id == session_id,
@@ -130,53 +182,92 @@ async def add_gaze_data(
     ).first()
     
     if not session:
+        print(f"Session {session_id} not found or doesn't belong to user {current_user.id}")
         raise HTTPException(status_code=404, detail="Session not found")
     
+    print(f"Found session: {session.name}")
+    
     # Add all gaze data points
+    points_added = 0
     for point in data.gazeData:
-        gaze_data = GazeData(
-            session_id=session_id,
-            timestamp=datetime.fromtimestamp(point.timestamp / 1000.0),
-            x=point.x,
-            y=point.y,
-            pupil_left=point.pupilLeftSize,
-            pupil_right=point.pupilRightSize
-        )
-        db.add(gaze_data)
-    
-    # Update session last updated time
-    session.updated_at = datetime.now()
-    db.commit()
-    
-    return {"status": "success", "points_added": len(data.gazeData)}
-
-@router.post("/batch")
-async def save_gaze_data_batch(
-    data: List[GazeDataCreate], 
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Save a batch of gaze data points"""
-    try:
-        # Process the batch of gaze data
-        count = 0
-        for point in data:
+        try:
             gaze_data = GazeData(
-                session_id=point.session_id,
+                session_id=session_id,
                 timestamp=datetime.fromtimestamp(point.timestamp / 1000.0),
                 x=point.x,
                 y=point.y,
-                pupil_left=point.pupil_left,
-                pupil_right=point.pupil_right
+                pupil_left=point.pupilLeftSize,
+                pupil_right=point.pupilRightSize
             )
             db.add(gaze_data)
-            count += 1
-        
+            points_added += 1
+        except Exception as e:
+            print(f"Error adding gaze point: {e}")
+            print(f"Point data: {point}")
+    
+    # Update session last updated time
+    session.updated_at = datetime.now()
+    try:
         db.commit()
-        return {"success": True, "points_saved": count}
+        print(f"Successfully added {points_added} gaze points to session {session_id}")
     except Exception as e:
+        print(f"Error committing gaze data: {e}")
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to save gaze data batch: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to save gaze data: {str(e)}")
+    
+    return {"status": "success", "points_added": points_added}
+
+@router.post("/sessions/{session_id}/gaze/batch")
+async def save_gaze_data_batch(
+    session_id: int,
+    data: List[dict] = Body(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Save a batch of gaze data points for a specific session"""
+    print(f"Received batch of {len(data)} gaze points for session {session_id}")
+    
+    # Check if session exists and belongs to user
+    session = db.query(SessionModel).filter(
+        SessionModel.id == session_id,
+        SessionModel.user_id == current_user.id
+    ).first()
+    
+    if not session:
+        print(f"Session {session_id} not found or doesn't belong to user {current_user.id}")
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    print(f"Found session: {session.name}")
+    
+    # Process the batch of gaze data
+    points_added = 0
+    for point in data:
+        try:
+            gaze_data = GazeData(
+                session_id=session_id,
+                timestamp=datetime.fromtimestamp(point['timestamp'] / 1000.0),
+                x=point['x'],
+                y=point['y'],
+                pupil_left=None,  # These fields might not be in the data
+                pupil_right=None  # These fields might not be in the data
+            )
+            db.add(gaze_data)
+            points_added += 1
+        except Exception as e:
+            print(f"Error adding gaze point: {e}")
+            print(f"Point data: {point}")
+    
+    # Update session last updated time
+    session.updated_at = datetime.now()
+    try:
+        db.commit()
+        print(f"Successfully added {points_added} gaze points to session {session_id}")
+    except Exception as e:
+        print(f"Error committing gaze data: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to save gaze data: {str(e)}")
+    
+    return {"status": "success", "points_added": points_added}
 
 # Comment out legacy routes that use get_current_user until we fix the auth system
 """
@@ -231,76 +322,48 @@ async def add_gaze_point(
     return db_gaze_point
 """
 
-@router.post("/sessions/{session_id}/gaze/batch", response_model=dict)
-async def add_gaze_points_batch(
-    session_id: int,
-    gaze_points: List[dict] = Body(...),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    # Check if session exists and belongs to user
-    session = db.query(SessionModel).filter(
-        SessionModel.id == session_id,
-        SessionModel.user_id == current_user.id
-    ).first()
-    
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    points_added = 0
-    try:
-        for point in gaze_points:
-            db_gaze_point = GazeData(
-                session_id=session_id,
-                timestamp=datetime.fromtimestamp(point['timestamp'] / 1000.0),
-                x=point['x'],
-                y=point['y'],
-                pupil_left=None,
-                pupil_right=None
-            )
-            db.add(db_gaze_point)
-            points_added += 1
-        
-        # Update session last updated time
-        session.updated_at = datetime.now()
-        db.commit()
-        
-        return {"status": "success", "count": points_added}
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error processing gaze data: {str(e)}")
-
-@router.get("/sessions/{session_id}/gaze", response_model=List[dict])
+@router.get("/sessions/{session_id}/gaze")
 async def get_gaze_points(
     session_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    offset: int = 0,
+    limit: int = 1000,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Get all gaze points for a session"""
-    # Check if session exists and belongs to user
-    session = db.query(SessionModel).filter(
-        SessionModel.id == session_id,
-        SessionModel.user_id == current_user.id
-    ).first()
-    
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    # Get all gaze points for the session
-    gaze_points = db.query(GazeData).filter(GazeData.session_id == session_id).all()
-    
-    # Format points for frontend
-    formatted_points = []
-    for point in gaze_points:
-        formatted_points.append({
-            "timestamp": int(point.timestamp.timestamp() * 1000),  # Convert to milliseconds
-            "x": point.x,
-            "y": point.y,
-            "state": 0,  # Default state for valid points
-            "url": ""    # Placeholder
-        })
-    
-    return formatted_points
+    try:
+        # Get total count
+        total = db.query(GazeData).filter(GazeData.session_id == session_id).count()
+        
+        # Get paginated gaze points
+        gaze_points = db.query(GazeData).filter(GazeData.session_id == session_id)\
+            .order_by(GazeData.timestamp)\
+            .offset(offset)\
+            .limit(limit)\
+            .all()
+        
+        # Format points for frontend
+        formatted_points = []
+        for point in gaze_points:
+            formatted_points.append({
+                "id": point.id,
+                "timestamp": point.timestamp,
+                "x": point.x,
+                "y": point.y,
+                "state": "default",  # Default state since it's not in the model
+                "url": ""  # Default URL since it's not in the model
+            })
+        
+        return {
+            "points": formatted_points,
+            "total": total,
+            "offset": offset,
+            "limit": limit
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching gaze points: {str(e)}"
+        )
 
 # Comment out legacy routes that use get_current_user until we fix the auth system
 """

@@ -30,6 +30,9 @@ const Navbar = () => {
               <Link to="/dashboard" className="nav-link">
                 Панель управления
               </Link>
+              <Link to="/recordings" className="nav-link">
+                Записи
+              </Link>
               <Link to="/recording" className="nav-link">
                 Новая запись
               </Link>

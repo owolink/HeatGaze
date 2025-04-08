@@ -13,6 +13,10 @@ class SessionResponse(BaseModel):
     device_info: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
+    has_recording: Optional[bool] = False
+    recording_count: Optional[int] = 0
+    duration: Optional[int] = 0
+    username: Optional[str] = None
 
     class Config:
         from_attributes = True

@@ -1,6 +1,6 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { NavigationProvider } from './context/NavigationContext';
 import Navbar from './components/Navbar';
 import Home from './components/Home';
@@ -8,14 +8,27 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard';
 import SessionRecording from './components/SessionRecording';
-import PrivateRoute from './components/PrivateRoute';
+import HeatmapViewer from './components/HeatmapViewer';
+import Recordings from './components/Recordings';
+import RecordingPlayer from './components/RecordingPlayer';
 import './App.css';
+
+// Protected Route component
+const ProtectedRoute = ({ children }) => {
+  const { currentUser } = useAuth();
+  
+  if (!currentUser) {
+    return <Navigate to="/login" />;
+  }
+  
+  return children;
+};
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <NavigationProvider>
+    <AuthProvider>
+      <NavigationProvider>
+        <Router>
           <div className="App">
             <Navbar />
             <div className="content">
@@ -23,28 +36,69 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                <Route
-                  path="/dashboard"
+                <Route 
+                  path="/" 
                   element={
-                    <PrivateRoute>
+                    <ProtectedRoute>
                       <Dashboard />
-                    </PrivateRoute>
-                  }
+                    </ProtectedRoute>
+                  } 
                 />
-                <Route
-                  path="/recording"
+                <Route 
+                  path="/dashboard" 
                   element={
-                    <PrivateRoute>
-                      <SessionRecording />
-                    </PrivateRoute>
-                  }
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } 
                 />
+                <Route 
+                  path="/record" 
+                  element={
+                    <ProtectedRoute>
+                      <SessionRecording />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/heatmap/:id" 
+                  element={
+                    <ProtectedRoute>
+                      <HeatmapViewer />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/recordings" 
+                  element={
+                    <ProtectedRoute>
+                      <Recordings />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/recordings/:id" 
+                  element={
+                    <ProtectedRoute>
+                      <RecordingPlayer />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/recordings/:id/heatmap" 
+                  element={
+                    <ProtectedRoute>
+                      <HeatmapViewer />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </div>
           </div>
-        </NavigationProvider>
-      </AuthProvider>
-    </Router>
+        </Router>
+      </NavigationProvider>
+    </AuthProvider>
   );
 }
 

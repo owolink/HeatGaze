@@ -228,6 +228,7 @@ function handleGazeData(gazePoint) {
         
         // If we've collected a batch of points, send them to the server
         if (gazeData.length >= 50) {
+            console.log(`Collected ${gazeData.length} gaze points, sending to server`);
             sendGazeData();
         }
     }
@@ -287,6 +288,8 @@ async function sendGazeData() {
             headers['Authorization'] = `Bearer ${token}`;
         }
         
+        console.log(`Sending ${pointsToSend.length} gaze points to server for session ${currentSession.id}`);
+        
         const response = await fetch(`/api/sessions/${currentSession.id}/gaze/batch`, {
             method: 'POST',
             headers: headers,
@@ -296,7 +299,7 @@ async function sendGazeData() {
         if (!response.ok) {
             // If failed, add the points back to the queue
             gazeData = [...pointsToSend, ...gazeData];
-            console.error('Failed to send gaze data batch');
+            console.error('Failed to send gaze data batch:', response.status, response.statusText);
             
             if (response.status === 401) {
                 // Stop recording if unauthorized
@@ -304,6 +307,9 @@ async function sendGazeData() {
                 alert('Ваша сессия истекла. Пожалуйста, войдите снова.');
                 window.location.href = '/login';
             }
+        } else {
+            const result = await response.json();
+            console.log(`Successfully sent ${result.points_added} gaze points to server`);
         }
     } catch (error) {
         // If failed, add the points back to the queue
