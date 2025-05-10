@@ -5,17 +5,17 @@ from datetime import datetime
 # Eye tracking session schemas
 class SessionCreate(BaseModel):
     name: str
-    deviceInfo: str = None
+    deviceInfo: str
 
 class SessionResponse(BaseModel):
     id: int
     name: str
-    device_info: Optional[str] = None
+    device_info: str
     created_at: datetime
     updated_at: Optional[datetime] = None
-    has_recording: Optional[bool] = False
-    recording_count: Optional[int] = 0
-    duration: Optional[int] = 0
+    has_recording: Optional[bool] = None
+    recording_count: Optional[int] = None
+    duration: Optional[int] = None
     username: Optional[str] = None
 
     class Config:
@@ -29,25 +29,41 @@ class SessionResponse(BaseModel):
         return int(delta.total_seconds())
 
 # Gaze data point schemas
-class GazeDataPoint(BaseModel):
-    timestamp: int  # milliseconds since epoch
+class GazePoint(BaseModel):
+    timestamp: float
     x: float
     y: float
     pupilLeftSize: Optional[float] = None
     pupilRightSize: Optional[float] = None
-    sessionId: int
 
 class GazeDataCreate(BaseModel):
-    gazeData: List[GazeDataPoint]
+    gazeData: List[GazePoint]
 
 class GazeDataResponse(BaseModel):
     id: int
-    session_id: int
     timestamp: datetime
     x: float
     y: float
     pupil_left: Optional[float] = None
     pupil_right: Optional[float] = None
+
+    class Config:
+        from_attributes = True
+
+# Cursor data schemas
+class CursorPoint(BaseModel):
+    timestamp: float
+    x: float
+    y: float
+
+class CursorDataCreate(BaseModel):
+    cursorData: List[CursorPoint]
+
+class CursorDataResponse(BaseModel):
+    id: int
+    timestamp: datetime
+    x: float
+    y: float
 
     class Config:
         from_attributes = True
@@ -71,12 +87,11 @@ class HeatmapResponse(BaseModel):
 # Screenshot schemas
 class ScreenshotCreate(BaseModel):
     timestamp: float
-    image_data: str
+    image_data: str  # base64 encoded
     url: str
 
 class ScreenshotResponse(BaseModel):
     id: int
-    session_id: int
     timestamp: float
     image_path: str
     url: str

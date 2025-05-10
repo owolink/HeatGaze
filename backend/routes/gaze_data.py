@@ -149,6 +149,13 @@ async def get_session(
     if session.updated_at:
         duration = int((session.updated_at - session.created_at).total_seconds())
     
+    # Look for screenshots that might contain video information
+    screenshots = db.query(Screenshot).filter(Screenshot.session_id == session.id).all()
+    
+    # Always generate a video URL based on session ID, regardless of gaze count
+    # This ensures the frontend can always attempt to load the video
+    video_url = f"/api/videos/{session.id}/recording.mp4"
+    
     # Create enhanced session data
     session_dict = {
         "id": session.id,
@@ -159,7 +166,9 @@ async def get_session(
         "has_recording": gaze_count > 0,
         "recording_count": gaze_count,
         "duration": duration,
-        "username": current_user.username
+        "username": current_user.username,
+        "video_url": video_url,  # Always provide a video URL
+        "screenshots": [screenshot.image_path for screenshot in screenshots[:5]] if screenshots else []
     }
     
     return session_dict
@@ -353,17 +362,33 @@ async def get_gaze_points(
                 "url": ""  # Default URL since it's not in the model
             })
         
-        return {
-            "points": formatted_points,
-            "total": total,
-            "offset": offset,
-            "limit": limit
-        }
+        # Return data in the expected format based on the frontend's SessionPlayer component
+        # Return points directly instead of wrapping them in an object
+        return formatted_points
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error fetching gaze points: {str(e)}"
         )
+
+# Add the new endpoint with the correct URL path
+@router.get("/sessions/{session_id}/gaze-data")
+async def get_gaze_data_points(
+    session_id: int,
+    offset: int = 0,
+    limit: int = 1000,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Alias for get_gaze_points to match frontend expectations"""
+    # Simply call the existing implementation
+    return await get_gaze_points(
+        session_id=session_id,
+        offset=offset,
+        limit=limit,
+        db=db,
+        current_user=current_user
+    )
 
 # Comment out legacy routes that use get_current_user until we fix the auth system
 """

@@ -134,20 +134,12 @@ const Dashboard = () => {
       </div>
 
       <div className="dashboard-actions">
-        <a href="http://localhost:8000" target="_blank" rel="noopener noreferrer" className="action-card">
-          <div className="action-icon">🎥</div>
-          <h3>Создать новую запись</h3>
-          <p>Перейдите на сайт записи для создания новых сессий отслеживания взгляда</p>
-        </a>
-        
         <div className="action-cards">
-          <div className="action-card" onClick={() => handleActionClick('record')}>
-            <div className="action-icon">
-              <i className="fas fa-video"></i>
-            </div>
-            <h3>Начать запись</h3>
-            <p>Записать новую сессию отслеживания взгляда</p>
-          </div>
+          <a href="http://localhost:8000" target="_blank" rel="noopener noreferrer" className="action-card">
+            <div className="action-icon">🎥</div>
+            <h3>Создать новую запись</h3>
+            <p>Перейдите на сайт записи для создания новых сессий отслеживания взгляда</p>
+          </a>
           
           <div className="action-card" onClick={() => handleActionClick('heatmap')}>
             <div className="action-icon">

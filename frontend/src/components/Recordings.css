@@ -1,126 +1,173 @@
 .recordings-container {
-  padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
+  padding: 30px 20px;
 }
 
 .recordings-container h1 {
+  font-size: 2.2rem;
   color: #333;
-  margin-bottom: 2rem;
-  font-size: 2rem;
+  margin-bottom: 30px;
+  text-align: center;
 }
 
 .recordings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 25px;
 }
 
 .recording-card {
-  background: white;
+  background-color: white;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s;
 }
 
 .recording-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+.recording-info {
+  padding: 20px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .recording-info h3 {
+  margin: 0 0 15px 0;
+  font-size: 1.3rem;
   color: #333;
-  margin: 0 0 1rem 0;
-  font-size: 1.2rem;
 }
 
 .recording-info p {
+  margin: 8px 0;
   color: #666;
-  margin: 0.5rem 0;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+}
+
+.recording-tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.tag {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.gaze-tag {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #bbdefb;
+}
+
+.cursor-tag {
+  background-color: #e8eaf6;
+  color: #3f51b5;
+  border: 1px solid #c5cae9;
 }
 
 .recording-actions {
+  padding: 15px 20px;
   display: flex;
-  gap: 1rem;
-  margin-top: 1.5rem;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .action-button {
-  flex: 1;
-  padding: 0.75rem;
-  border: none;
+  display: block;
+  width: 100%;
+  padding: 10px 15px;
   border-radius: 4px;
-  font-size: 0.9rem;
-  font-weight: 500;
   text-align: center;
   text-decoration: none;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+  font-weight: 500;
+  transition: background-color 0.3s;
 }
 
 .view-recording {
-  background-color: #4a90e2;
+  background-color: #2196f3;
   color: white;
 }
 
 .view-recording:hover {
-  background-color: #357abd;
+  background-color: #1976d2;
+}
+
+.heatmap-links {
+  display: flex;
+  gap: 8px;
 }
 
 .view-heatmap {
-  background-color: #50c878;
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+
+.gaze-heatmap {
+  background-color: #f44336;
   color: white;
 }
 
-.view-heatmap:hover {
-  background-color: #3da066;
+.gaze-heatmap:hover {
+  background-color: #d32f2f;
 }
 
-.loading-spinner {
-  text-align: center;
-  padding: 2rem;
-  color: #666;
+.cursor-heatmap {
+  background-color: #3f51b5;
+  color: white;
 }
 
-.error-message {
-  text-align: center;
-  padding: 2rem;
-  color: #dc3545;
-  background-color: #f8d7da;
-  border-radius: 4px;
-  margin: 1rem 0;
+.cursor-heatmap:hover {
+  background-color: #303f9f;
 }
 
 .no-recordings-message {
   text-align: center;
-  padding: 3rem;
-  background-color: #f8f9fa;
+  padding: 50px 0;
+  background-color: #f9f9f9;
   border-radius: 8px;
-  color: #666;
+}
+
+.no-recordings-message h2 {
+  font-size: 1.8rem;
+  color: #333;
+  margin-bottom: 15px;
 }
 
 .no-recordings-message p {
-  margin: 0.5rem 0;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  padding: 50px 0;
+}
+
+.error-message {
+  text-align: center;
+  padding: 20px;
+  background-color: #ffebee;
+  color: #c62828;
+  border-radius: 8px;
+  margin-top: 20px;
 }
 
 @media (max-width: 768px) {
-  .recordings-container {
-    padding: 1rem;
-  }
-
   .recordings-grid {
     grid-template-columns: 1fr;
-    gap: 1rem;
   }
-
-  .recording-card {
-    padding: 1rem;
-  }
-
-  .recording-actions {
+  
+  .heatmap-links {
     flex-direction: column;
-    gap: 0.5rem;
   }
 } 

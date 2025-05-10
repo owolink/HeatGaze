@@ -35,6 +35,7 @@ class Session(Base):
     gaze_data = relationship("GazeData", back_populates="session", cascade="all, delete-orphan")
     heatmaps = relationship("Heatmap", back_populates="session", cascade="all, delete-orphan")
     screenshots = relationship("Screenshot", back_populates="session", cascade="all, delete-orphan")
+    cursor_data = relationship("CursorData", back_populates="session", cascade="all, delete-orphan")
 
 # GazeData model for individual gaze data points
 class GazeData(Base):
@@ -51,6 +52,20 @@ class GazeData(Base):
 
     # Relationships
     session = relationship("Session", back_populates="gaze_data")
+
+# CursorData model for mouse movement tracking
+class CursorData(Base):
+    __tablename__ = "cursor_data"
+    __table_args__ = {'extend_existing': True}
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False)
+    timestamp = Column(DateTime, nullable=False)
+    x = Column(Float, nullable=False)
+    y = Column(Float, nullable=False)
+
+    # Relationships
+    session = relationship("Session", back_populates="cursor_data")
 
 # Heatmap model for generated heatmap images
 class Heatmap(Base):

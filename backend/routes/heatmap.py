@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body, Query
 from sqlalchemy.orm import Session
 from app.utils import get_db, generate_heatmap, img_to_base64, calculate_heatmap_stats
-from app.models import Session as SessionModel, User, Heatmap, GazeData
+from app.models import Session as SessionModel, User, Heatmap, GazeData, CursorData
 from routes.auth import get_current_user
 from pydantic import BaseModel
 from typing import List, Optional
@@ -23,8 +23,13 @@ class HeatmapRequest(BaseModel):
     end_time: Optional[float] = None
 
 class HeatmapResponse(BaseModel):
-    image: str  # base64 encoded image
+    image: str
     stats: dict
+    cursorHeatmapUrl: Optional[str] = None
+    cursorStats: Optional[dict] = None
+    pointCount: Optional[int] = None
+    videoUrl: Optional[str] = None
+    serverUrl: Optional[str] = None
 
 class HeatmapFilterRequest(BaseModel):
     heatmap_id: int
@@ -53,7 +58,12 @@ async def generate_session_heatmap(
         "stats": {
             "focus_areas": 3,
             "attention_score": 75,
-            "coverage": 0.65
+            "coverage": 0.65,
+            "kld": 0.42,
+            "nss": 1.85,
+            "similarity": 0.65,
+            "cc": 0.78,
+            "auc": 0.82
         }
     }
 
@@ -101,6 +111,7 @@ async def get_heatmap(
 @router.get("/sessions/{session_id}/heatmap", response_model=HeatmapResponse)
 async def get_session_heatmap(
     session_id: int,
+    type: str = "combined",  # Changed default from "gaze" to "combined"
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -114,7 +125,89 @@ async def get_session_heatmap(
         raise HTTPException(status_code=404, detail="Session not found")
     
     try:
-        # Count gaze data points first - avoid loading all data if there's too much
+        # Check if type is valid
+        if type not in ["gaze", "cursor", "combined"]:
+            type = "combined"  # Default to combined if invalid
+
+        if type == "cursor":
+            # Get cursor data points
+            point_count = db.query(CursorData).filter(
+                CursorData.session_id == session_id
+            ).count()
+            
+            if point_count == 0:
+                # Return empty response if no data available
+                return {
+                    "image": "",
+                    "stats": {
+                        "pointCount": 0,
+                        "focus_areas": 0,
+                        "attention_score": 0,
+                        "coverage": 0,
+                        "kld": 0,
+                        "nss": 0,
+                        "similarity": 0,
+                        "cc": 0,
+                        "auc": 0
+                    }
+                }
+            
+            # Get cursor data points
+            cursor_data = db.query(CursorData).filter(
+                CursorData.session_id == session_id
+            ).order_by(CursorData.timestamp.desc()).limit(10000).all()
+            
+            # Transform cursor data into format needed for heatmap generation
+            cursor_points = []
+            for point in cursor_data:
+                if point.x is not None and point.y is not None:
+                    cursor_points.append({
+                        'x': point.x,
+                        'y': point.y,
+                        'timestamp': point.timestamp.timestamp() * 1000  # Convert to milliseconds
+                    })
+            
+            if not cursor_points:
+                # Return empty response if no valid points
+                return {
+                    "image": "",
+                    "stats": {
+                        "pointCount": 0,
+                        "focus_areas": 0,
+                        "attention_score": 0,
+                        "coverage": 0,
+                        "kld": 0,
+                        "nss": 0,
+                        "similarity": 0,
+                        "cc": 0,
+                        "auc": 0
+                    }
+                }
+            
+            # Generate cursor heatmap
+            heatmap_image, raw_heatmap = generate_heatmap(cursor_points, 1920, 1080)
+            
+            # Calculate advanced statistics
+            stats = calculate_heatmap_stats(raw_heatmap, cursor_points)
+            
+            return {
+                "image": heatmap_image,
+                "stats": stats,
+                "cursorHeatmapUrl": heatmap_image,  # Set cursor heatmap as the main image
+                "cursorStats": stats
+            }
+        
+        # Get screen dimensions from the session if available, or use defaults
+        screen_width = 1920
+        screen_height = 1080
+        
+        # Try to get dimensions from session if they exist
+        if hasattr(session, 'screen_width') and session.screen_width:
+            screen_width = session.screen_width
+        if hasattr(session, 'screen_height') and session.screen_height:
+            screen_height = session.screen_height
+        
+        # Get gaze data points
         point_count = db.query(GazeData).filter(
             GazeData.session_id == session_id
         ).count()
@@ -127,22 +220,21 @@ async def get_session_heatmap(
                     "pointCount": 0,
                     "focus_areas": 0,
                     "attention_score": 0,
-                    "coverage": 0
+                    "coverage": 0,
+                    "kld": 0,
+                    "nss": 0,
+                    "similarity": 0,
+                    "cc": 0,
+                    "auc": 0
                 }
             }
         
-        # Get all gaze data for this session - limit to the most recent 10,000 points
-        # to prevent timeout issues with very large datasets
+        # Get gaze data points
         gaze_data = db.query(GazeData).filter(
             GazeData.session_id == session_id
         ).order_by(GazeData.timestamp.desc()).limit(10000).all()
         
         # Transform gaze data into format needed for heatmap generation
-        # Assuming standard 1920x1080 screen size - adjust if needed
-        screen_width = 1920
-        screen_height = 1080
-        
-        # Convert SQLAlchemy objects to dictionaries for heatmap generation
         gaze_points = []
         for point in gaze_data:
             if point.x is not None and point.y is not None:
@@ -160,26 +252,76 @@ async def get_session_heatmap(
                     "pointCount": 0,
                     "focus_areas": 0,
                     "attention_score": 0,
-                    "coverage": 0
+                    "coverage": 0,
+                    "kld": 0,
+                    "nss": 0,
+                    "similarity": 0,
+                    "cc": 0,
+                    "auc": 0
                 }
             }
         
         # Generate heatmap
         heatmap_image, raw_heatmap = generate_heatmap(gaze_points, screen_width, screen_height)
         
-        # Calculate basic stats - faster calculations
-        focus_areas = min(len(set((int(p['x'])//100, int(p['y'])//100) for p in gaze_points)), 10)
-        coverage = min(len(set((int(p['x'])//50, int(p['y'])//50) for p in gaze_points)) / 400.0, 1.0)
-        attention_score = min(point_count // 30, 100)  # Use total point count for attention score
+        # Calculate advanced statistics using our new implementation
+        stats = calculate_heatmap_stats(raw_heatmap, gaze_points)
         
+        # If requesting the combined view, also get cursor data
+        if type == "combined":
+            # Count cursor data points
+            cursor_count = db.query(CursorData).filter(
+                CursorData.session_id == session_id
+            ).count()
+            
+            cursor_stats = None
+            cursor_heatmap_image = None
+            
+            if cursor_count > 0:
+                # Get cursor data points
+                cursor_data = db.query(CursorData).filter(
+                    CursorData.session_id == session_id
+                ).order_by(CursorData.timestamp.desc()).limit(10000).all()
+                
+                # Transform cursor data
+                cursor_points = []
+                for point in cursor_data:
+                    if point.x is not None and point.y is not None:
+                        cursor_points.append({
+                            'x': point.x,
+                            'y': point.y,
+                            'timestamp': point.timestamp.timestamp() * 1000
+                        })
+                
+                if cursor_points:
+                    # Generate cursor heatmap
+                    cursor_heatmap_image, cursor_raw_heatmap = generate_heatmap(cursor_points, screen_width, screen_height)
+                    
+                    # Calculate cursor statistics
+                    cursor_stats = calculate_heatmap_stats(cursor_raw_heatmap, cursor_points)
+                
+            # Always return the cursor heatmap URL and stats in combined mode, even if null
+            video_url = None
+            if hasattr(session, 'video_url') and session.video_url:
+                video_url = session.video_url
+            
+            return {
+                "image": heatmap_image,
+                "stats": stats,
+                "cursorHeatmapUrl": cursor_heatmap_image,
+                "cursorStats": cursor_stats,
+                "videoUrl": video_url
+            }
+        
+        # Default gaze-only response
+        video_url = None
+        if hasattr(session, 'video_url') and session.video_url:
+            video_url = session.video_url
+            
         return {
             "image": heatmap_image,
-            "stats": {
-                "pointCount": point_count,  # Use total point count
-                "focus_areas": focus_areas,
-                "attention_score": attention_score,
-                "coverage": coverage
-            }
+            "stats": stats,
+            "videoUrl": video_url
         }
     except Exception as e:
         # Log the error for debugging

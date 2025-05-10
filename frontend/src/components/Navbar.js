@@ -33,8 +33,8 @@ const Navbar = () => {
               <Link to="/recordings" className="nav-link">
                 Записи
               </Link>
-              <Link to="/recording" className="nav-link">
-                Новая запись
+              <Link to="/analysis" className="nav-link">
+                Анализ данных
               </Link>
               <div className="nav-user">
                 <span className="user-name">{currentUser.username}</span>

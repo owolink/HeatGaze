@@ -18,6 +18,7 @@ const demoFrame = document.getElementById('demoFrame');
 // State
 let currentSession = null;
 let gazeData = [];
+let cursorData = [];
 let screenshots = [];
 let currentScreenshotId = null;
 let isRecording = false;
@@ -25,6 +26,7 @@ let isCalibrating = false;
 let isPlaying = false;
 let playbackInterval = null;
 let currentPlaybackIndex = 0;
+let cursorBatchInterval = null;
 
 // Register the demo origin with GazeCloud 
 // (will need to be done on your actual server)
@@ -106,7 +108,11 @@ async function startTracking() {
 
         currentSession = await response.json();
         gazeData = [];
+        cursorData = [];
         screenshots = [];
+        
+        // Start cursor tracking
+        startCursorTracking(currentSession.id);
         
         // Show calibration section
         document.querySelectorAll('section').forEach(section => {
@@ -159,59 +165,43 @@ async function startTracking() {
 }
 
 function stopTracking() {
-    // Stop eye tracking if API is available
-    if (typeof GazeCloudAPI !== 'undefined') {
-        try {
-            GazeCloudAPI.StopEyeTracking();
-        } catch (error) {
-            console.error('Error stopping GazeCloudAPI:', error);
-        }
-    }
-    
-    isRecording = false;
-    stopButton.disabled = true;
-    
-    // End the session
-    if (currentSession) {
-        // Get authentication token from localStorage
-        const token = localStorage.getItem('token');
-        
-        if (!token) {
-            console.error('No authentication token found when ending session');
-            window.location.href = '/login';
-            return;
+    if (isRecording || isCalibrating) {
+        // Stop GazeCloud API
+        if (typeof GazeCloudAPI !== 'undefined') {
+            try {
+                GazeCloudAPI.StopEyeTracking();
+            } catch (error) {
+                console.error('Error stopping GazeCloudAPI:', error);
+            }
         }
         
-        fetch(`/api/sessions/${currentSession.id}/end`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
-        }).then(response => {
-            if (!response.ok) {
-                if (response.status === 401) {
-                    // Redirect to login if unauthorized
-                    console.error('Authentication error: Token expired or invalid');
-                    localStorage.removeItem('token'); // Clear invalid token
-                    window.location.href = '/login';
-                    return;
-                }
-                console.error('Failed to end session properly');
-            }
-        }).catch(error => {
-            console.error('Error ending session:', error);
+        // Stop cursor tracking
+        stopCursorTracking();
+        
+        // Send any remaining gaze data
+        if (gazeData.length > 0) {
+            sendGazeData();
+        }
+        
+        // Reset state
+        isRecording = false;
+        isCalibrating = false;
+        
+        // Update UI
+        stopButton.disabled = true;
+        startButton.disabled = false;
+        calibration.style.display = 'none';
+        demoSite.style.display = 'none';
+        
+        // Show heatmap viewer section
+        document.querySelectorAll('section').forEach(section => {
+            section.style.display = 'none';
         });
+        heatmapViewer.style.display = 'block';
+        
+        // Initialize video player
+        initializePlayer();
     }
-    
-    // Show heatmap viewer section
-    document.querySelectorAll('section').forEach(section => {
-        section.style.display = 'none';
-    });
-    heatmapViewer.style.display = 'block';
-    
-    // Initialize video player
-    initializePlayer();
 }
 
 function handleGazeData(gazePoint) {
@@ -235,7 +225,7 @@ function handleGazeData(gazePoint) {
 }
 
 function handleCalibrationComplete() {
-    console.log('Calibration complete');
+    console.log('Gaze Calibration Complete');
     isCalibrating = false;
     isRecording = true;
     
@@ -244,6 +234,14 @@ function handleCalibrationComplete() {
         section.style.display = 'none';
     });
     demoSite.style.display = 'block';
+    
+    // Verify cursor tracking is active
+    if (cursorBatchInterval === null && currentSession) {
+        console.log('Ensuring cursor tracking is active after calibration');
+        startCursorTracking(currentSession.id);
+    } else {
+        console.log('Cursor tracking already active, continuing with recording');
+    }
     
     // Start batch sending gaze data to server periodically
     setInterval(() => {
@@ -700,6 +698,14 @@ window.addEventListener("load", function() {
         });
         demoSite.style.display = 'block';
         
+        // Verify cursor tracking is active
+        if (cursorBatchInterval === null && currentSession) {
+            console.log('Ensuring cursor tracking is active after calibration');
+            startCursorTracking(currentSession.id);
+        } else {
+            console.log('Cursor tracking already active, continuing with recording');
+        }
+        
         // Start batch sending gaze data to server periodically
         setInterval(() => {
             if (isRecording && gazeData.length > 0) {
@@ -730,4 +736,235 @@ window.addEventListener("load", function() {
     
     GazeCloudAPI.UseClickRecalibration = true;
     GazeCloudAPI.OnResult = PlotGaze;
-}); 
+});
+
+// Start tracking cursor movements and sending batches to backend
+function startCursorTracking(sessionId) {
+    if (!sessionId) return;
+    
+    console.log('Starting cursor tracking for session:', sessionId);
+    
+    // Reset cursor data array
+    cursorData = [];
+    
+    // Set up cursor data batch sending
+    cursorBatchInterval = setInterval(() => {
+        if (cursorData.length === 0) return;
+        
+        const batchToSend = [...cursorData];
+        cursorData = [];
+        
+        console.log(`Sending ${batchToSend.length} cursor points to server for session ${sessionId}`);
+        
+        // Get token each time to ensure it's current
+        const token = getAuthToken();
+        
+        // Use the same header pattern as gaze data for consistency
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        
+        // Add token to headers if available
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        // Send cursor data to server
+        fetch(`/api/sessions/${sessionId}/cursor/batch`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(batchToSend)
+        })
+        .then(response => {
+            if (!response.ok) {
+                console.error(`Failed to send cursor batch: ${response.status}`);
+                // Check if unauthorized
+                if (response.status === 401) {
+                    console.error('Unauthorized: Token might be invalid');
+                }
+                throw new Error(`Failed to send cursor batch: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => console.log('Successfully sent cursor batch data:', data))
+        .catch(err => {
+            console.error('Failed to send cursor batch:', err);
+            // Put the data back in the queue if there was an error
+            cursorData = [...batchToSend, ...cursorData];
+        });
+    }, 2000);
+    
+    // Set up the mousemove event listener on document
+    document.addEventListener('mousemove', trackCursor);
+    console.log('Cursor tracking event listener registered on document');
+    
+    // Also track cursor in the demo iframe if it exists
+    if (demoFrame) {
+        try {
+            // Try to access the iframe content
+            demoFrame.contentDocument.addEventListener('mousemove', function(e) {
+                // Convert iframe coordinates to main document coordinates
+                const rect = demoFrame.getBoundingClientRect();
+                const x = e.clientX + rect.left;
+                const y = e.clientY + rect.top;
+                
+                // Create a synthetic event to process
+                const syntheticEvent = {
+                    clientX: x,
+                    clientY: y,
+                    isSynthetic: true
+                };
+                
+                trackCursor(syntheticEvent);
+            });
+            console.log('Cursor tracking event listener registered on iframe');
+        } catch (error) {
+            // This will fail for cross-origin iframes due to security restrictions
+            console.warn('Could not attach mousemove listener to iframe (possibly cross-origin):', error);
+        }
+    }
+}
+
+// Track cursor position on mouse movement
+function trackCursor(e) {
+    // Only track when recording or calibrating
+    if (!isRecording && !isCalibrating) {
+        console.log('Not tracking cursor: recording or calibration not active');
+        return;
+    }
+    if (!currentSession) {
+        console.log('Not tracking cursor: no active session');
+        return;
+    }
+    
+    const timestamp = Date.now();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    // Only log every 10th point to reduce console spam
+    if (cursorData.length % 10 === 0) {
+        console.log(`Cursor position: x=${x}, y=${y}, timestamp=${timestamp}, isRecording=${isRecording}, isCalibrating=${isCalibrating}`);
+    }
+    
+    // Add to batch for server
+    cursorData.push({
+        x: x,
+        y: y,
+        timestamp: timestamp
+    });
+    
+    // If batch gets too large, send immediately
+    if (cursorData.length >= 50) {
+        console.log(`Batch limit reached, sending ${cursorData.length} cursor points immediately`);
+        const batchToSend = [...cursorData];
+        cursorData = [];
+        
+        // Get token each time to ensure it's current
+        const token = getAuthToken();
+        
+        // Use the same header pattern as gaze data for consistency
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        
+        // Add token to headers if available
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        fetch(`/api/sessions/${currentSession.id}/cursor/batch`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(batchToSend)
+        })
+        .then(response => {
+            if (!response.ok) {
+                console.error(`Failed to send immediate cursor batch: ${response.status}`);
+                // Check if unauthorized
+                if (response.status === 401) {
+                    console.error('Unauthorized: Token might be invalid');
+                }
+                throw new Error(`Failed to send immediate cursor batch: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => console.log('Successfully sent immediate cursor batch:', data))
+        .catch(err => {
+            console.error('Failed to send immediate cursor batch:', err);
+            // Put the data back in the queue if there was an error
+            cursorData = [...batchToSend, ...cursorData];
+        });
+    }
+}
+
+// Stop cursor tracking
+function stopCursorTracking() {
+    console.log('Stopping cursor tracking');
+    
+    // Remove event listener from document
+    document.removeEventListener('mousemove', trackCursor);
+    console.log('Cursor tracking event listener removed from document');
+    
+    // Remove event listener from iframe if possible
+    if (demoFrame) {
+        try {
+            demoFrame.contentDocument.removeEventListener('mousemove', trackCursor);
+            console.log('Cursor tracking event listener removed from iframe');
+        } catch (error) {
+            console.warn('Could not remove mousemove listener from iframe (possibly cross-origin):', error);
+        }
+    }
+    
+    // Clear interval
+    if (cursorBatchInterval) {
+        clearInterval(cursorBatchInterval);
+        cursorBatchInterval = null;
+        console.log('Cursor batch interval cleared');
+    }
+    
+    // Send any remaining data
+    if (cursorData.length > 0 && currentSession) {
+        console.log(`Sending final batch of ${cursorData.length} cursor points`);
+        
+        // Get token each time to ensure it's current
+        const token = getAuthToken();
+        
+        // Use the same header pattern as gaze data for consistency
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        
+        // Add token to headers if available
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        fetch(`/api/sessions/${currentSession.id}/cursor/batch`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(cursorData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                console.error(`Failed to send final cursor batch: ${response.status}`);
+                // Check if unauthorized
+                if (response.status === 401) {
+                    console.error('Unauthorized: Token might be invalid');
+                }
+                throw new Error(`Failed to send final cursor batch: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => console.log('Successfully sent final cursor batch data:', data))
+        .catch(err => console.error('Failed to send final cursor batch:', err));
+        
+        cursorData = [];
+    } else {
+        console.log('No remaining cursor data to send');
+    }
+}
+
+// Function to get auth token from storage
+function getAuthToken() {
+    return localStorage.getItem('token');
+} 

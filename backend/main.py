@@ -42,11 +42,12 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # Import routes after app is created to avoid circular imports
-from routes import gaze_data, auth, heatmap, pages
+from routes import gaze_data, auth, heatmap, pages, cursor_data
 
 # Include routers
 app.include_router(auth.router, prefix="/api", tags=["Auth"])
 app.include_router(gaze_data.router, prefix="/api", tags=["Gaze Data"])
+app.include_router(cursor_data.router, prefix="/api", tags=["Cursor Data"])
 app.include_router(heatmap.router, prefix="/api", tags=["Heatmap"])
 app.include_router(pages.router, prefix="/api", tags=["Demo Pages"])
 

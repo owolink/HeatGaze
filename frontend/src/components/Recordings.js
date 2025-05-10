@@ -29,7 +29,32 @@ const Recordings = () => {
         const recordingsWithData = data.filter(session => session.has_recording);
         console.log('Sessions with recordings:', recordingsWithData);
         
-        setRecordings(recordingsWithData);
+        // Process the recordings to check for cursor data
+        const processedRecordings = await Promise.all(
+          recordingsWithData.map(async (recording) => {
+            try {
+              // Check if this session has cursor data
+              const cursorResponse = await fetch(`/api/sessions/${recording.id}/cursor`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+              
+              if (cursorResponse.ok) {
+                const cursorData = await cursorResponse.json();
+                const hasCursorData = cursorData.points && cursorData.points.length > 0;
+                return { ...recording, hasCursorData };
+              }
+              
+              return { ...recording, hasCursorData: false };
+            } catch (err) {
+              console.error(`Error checking cursor data for session ${recording.id}:`, err);
+              return { ...recording, hasCursorData: false };
+            }
+          })
+        );
+        
+        setRecordings(processedRecordings);
       } catch (err) {
         console.error('Error fetching recordings:', err);
         setError(err.message);
@@ -72,9 +97,13 @@ const Recordings = () => {
             <div key={recording.id} className="recording-card">
               <div className="recording-info">
                 <h3>{recording.name || 'Untitled Recording'}</h3>
-                <p>Date: {new Date(recording.createdAt).toLocaleDateString()}</p>
-                <p>Duration: {recording.duration || 'N/A'}</p>
-                <p>User: {recording.user?.name || 'Unknown'}</p>
+                <p>Date: {new Date(recording.created_at).toLocaleDateString()}</p>
+                <p>Duration: {formatDuration(recording.duration)}</p>
+                <p>User: {recording.username || 'Unknown'}</p>
+                <div className="recording-tags">
+                  <span className="tag gaze-tag">Gaze</span>
+                  {recording.hasCursorData && <span className="tag cursor-tag">Cursor</span>}
+                </div>
               </div>
               <div className="recording-actions">
                 <Link 
@@ -83,12 +112,22 @@ const Recordings = () => {
                 >
                   View Recording
                 </Link>
-                <Link 
-                  to={`/recordings/${recording.id}/heatmap`} 
-                  className="action-button view-heatmap"
-                >
-                  View Heatmap
-                </Link>
+                <div className="heatmap-links">
+                  <Link 
+                    to={`/recordings/${recording.id}/heatmap?type=gaze`} 
+                    className="action-button view-heatmap gaze-heatmap"
+                  >
+                    Gaze Heatmap
+                  </Link>
+                  {recording.hasCursorData && (
+                    <Link 
+                      to={`/recordings/${recording.id}/heatmap?type=cursor`} 
+                      className="action-button view-heatmap cursor-heatmap"
+                    >
+                      Cursor Heatmap
+                    </Link>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -96,6 +135,16 @@ const Recordings = () => {
       )}
     </div>
   );
+};
+
+// Helper function to format duration in seconds to MM:SS
+const formatDuration = (seconds) => {
+  if (!seconds) return 'N/A';
+  
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
 export default Recordings; 

@@ -11,6 +11,7 @@ import SessionRecording from './components/SessionRecording';
 import HeatmapViewer from './components/HeatmapViewer';
 import Recordings from './components/Recordings';
 import RecordingPlayer from './components/RecordingPlayer';
+import DataAnalysis from './components/DataAnalysis';
 import './App.css';
 
 // Protected Route component
@@ -89,6 +90,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <HeatmapViewer />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/analysis" 
+                  element={
+                    <ProtectedRoute>
+                      <DataAnalysis />
                     </ProtectedRoute>
                   } 
                 />
