@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 import './Recordings.css';
 
 const Recordings = () => {
@@ -12,17 +13,9 @@ const Recordings = () => {
   useEffect(() => {
     const fetchRecordings = async () => {
       try {
-        const response = await fetch('/api/sessions', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        const response = await api.get('/api/sessions');
         
-        if (!response.ok) {
-          throw new Error('Failed to fetch recordings');
-        }
-
-        const data = await response.json();
+        const data = response.data;
         console.log('Fetched sessions:', data);
         
         // Filter sessions that have recordings
@@ -34,14 +27,10 @@ const Recordings = () => {
           recordingsWithData.map(async (recording) => {
             try {
               // Check if this session has cursor data
-              const cursorResponse = await fetch(`/api/sessions/${recording.id}/cursor`, {
-                headers: {
-                  'Authorization': `Bearer ${token}`
-                }
-              });
+              const cursorResponse = await api.get(`/api/sessions/${recording.id}/cursor`);
               
-              if (cursorResponse.ok) {
-                const cursorData = await cursorResponse.json();
+              if (cursorResponse.status === 200) {
+                const cursorData = cursorResponse.data;
                 const hasCursorData = cursorData.points && cursorData.points.length > 0;
                 return { ...recording, hasCursorData };
               }

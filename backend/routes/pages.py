@@ -189,9 +189,7 @@ async def get_news_page(request: Request):
     return templates.TemplateResponse(
         "news.html", 
         {
-            "request": request,
-            "news": news_data,
-            "current_date": datetime.now().strftime("%d.%m.%Y")
+            "request": request
         }
     )
 
@@ -201,9 +199,17 @@ async def get_weather_page(request: Request):
     return templates.TemplateResponse(
         "weather.html", 
         {
-            "request": request,
-            "weather": weather_data,
-            "current_date": datetime.now().strftime("%d.%m.%Y")
+            "request": request
+        }
+    )
+
+@router.get("/demo/completed", response_class=HTMLResponse)
+async def demo_completed(request: Request):
+    """Render demo completion page"""
+    return templates.TemplateResponse(
+        "demo_completed.html", 
+        {
+            "request": request
         }
     )
 

@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create a custom axios instance for API requests
 const api = axios.create({
-  baseURL: 'http://localhost:8000',  // Direct connection to the backend
+  baseURL: '',  // Use relative URLs instead of direct connection to backend
   timeout: 60000, // 60 seconds - increased from 30s to handle heatmap generation
   headers: {
     'Content-Type': 'application/json',

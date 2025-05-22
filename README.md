@@ -80,7 +80,7 @@ MIT License - см. файл [LICENSE](LICENSE) для подробностей.
 
 ## Авторы
 
-- [Ваше имя](https://github.com/yourusername)
+- [Устинов Иван](https://github.com/owolink)
 
 ## Поддержка
 

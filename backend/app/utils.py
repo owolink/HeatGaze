@@ -26,6 +26,18 @@ def generate_heatmap(gaze_data, width, height):
     Generate a heatmap from gaze data
     Returns colored heatmap and raw heatmap as base64 encoded strings
     """
+    print(f"generate_heatmap called with {len(gaze_data)} points, width={width}, height={height}")
+    
+    # Validate inputs
+    if not gaze_data:
+        print("Warning: No gaze data provided for heatmap generation")
+        empty_heatmap = np.zeros((height, width))
+        return "", empty_heatmap
+    
+    if not isinstance(width, int) or not isinstance(height, int) or width <= 0 or height <= 0:
+        print(f"Error: Invalid dimensions for heatmap: width={width}, height={height}")
+        return "", np.zeros((100, 100))
+    
     # Create an empty heatmap
     heatmap = np.zeros((height, width))
     
@@ -37,7 +49,11 @@ def generate_heatmap(gaze_data, width, height):
     if len(gaze_data) > max_points:
         # Take a sample of points if there are too many
         import random
+        print(f"Sampling {max_points} points from {len(gaze_data)} total points")
         gaze_data = random.sample(gaze_data, max_points)
+    
+    # Count valid points actually used
+    valid_points = 0
     
     # Process gaze points - just mark their positions on the heatmap
     for point in gaze_data:
@@ -46,39 +62,70 @@ def generate_heatmap(gaze_data, width, height):
             # Skip points outside the screen
             if 0 <= x < width and 0 <= y < height:
                 heatmap[y, x] += 1
-        except (ValueError, TypeError, KeyError):
+                valid_points += 1
+            else:
+                print(f"Skipping out-of-bounds point: ({x}, {y})")
+        except (ValueError, TypeError, KeyError) as e:
             # Skip invalid points
+            print(f"Skipping invalid point: {point}, error: {str(e)}")
             continue
     
+    print(f"Added {valid_points} valid points to heatmap")
+    
+    if valid_points == 0:
+        print("Warning: No valid points for heatmap generation")
+        return "", heatmap
+    
     # Apply Gaussian filter for smoothing (much faster than manual calculation)
-    heatmap = gaussian_filter(heatmap, sigma=sigma)
+    try:
+        heatmap = gaussian_filter(heatmap, sigma=sigma)
+        print(f"Applied Gaussian filter with sigma={sigma}")
+    except Exception as e:
+        print(f"Error applying Gaussian filter: {str(e)}")
     
     # Normalize the heatmap
-    if np.max(heatmap) > 0:
-        heatmap = heatmap / np.max(heatmap)
+    heatmap_max = np.max(heatmap)
+    if heatmap_max > 0:
+        heatmap = heatmap / heatmap_max
+        print(f"Normalized heatmap. Max value: {heatmap_max}, new max: {np.max(heatmap)}")
+    else:
+        print("Warning: Empty heatmap (max value is 0)")
+    
+    # Debug info about the heatmap
+    print(f"Heatmap stats - min: {np.min(heatmap)}, max: {np.max(heatmap)}, mean: {np.mean(heatmap)}")
+    print(f"Heatmap shape: {heatmap.shape}")
+    print(f"Non-zero elements: {np.count_nonzero(heatmap)}")
     
     # Create a custom colormap (transparent blue to red)
     colors = [(0, 0, 0, 0), (0, 0, 1, 0.3), (0, 1, 1, 0.5), (0, 1, 0, 0.7), (1, 1, 0, 0.8), (1, 0, 0, 0.9)]
     cmap = LinearSegmentedColormap.from_list('heatmap_cmap', colors)
     
-    # Create the plot with transparent background
-    plt.figure(figsize=(width/100, height/100), dpi=100)
-    plt.imshow(heatmap, cmap=cmap)
-    plt.axis('off')
-    
-    # Save the colored heatmap to a BytesIO object
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0, transparent=True)
-    buf.seek(0)
-    
-    # Encode as base64
-    heatmap_colored = base64.b64encode(buf.getvalue()).decode('utf-8')
-    
-    # Close the plot to free memory
-    plt.close()
-    
-    # Also return the raw heatmap data for statistics
-    return heatmap_colored, heatmap
+    try:
+        # Create the plot with transparent background
+        plt.figure(figsize=(width/100, height/100), dpi=100)
+        plt.imshow(heatmap, cmap=cmap)
+        plt.axis('off')
+        
+        # Save the colored heatmap to a BytesIO object
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0, transparent=True)
+        buf.seek(0)
+        
+        # Encode as base64
+        heatmap_colored = base64.b64encode(buf.getvalue()).decode('utf-8')
+        
+        # Close the plot to free memory
+        plt.close()
+        
+        print(f"Successfully generated heatmap image, size: {len(heatmap_colored)} bytes")
+        
+        # Also return the raw heatmap data for statistics
+        return heatmap_colored, heatmap
+    except Exception as e:
+        print(f"Error generating heatmap visualization: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return "", heatmap
 
 # Function to convert an image to base64
 def img_to_base64(img):
@@ -396,5 +443,131 @@ def calculate_heatmap_stats(heatmap, gaze_points=None):
             "focus_areas": 0,
             "attention_score": 0,
             "coverage": 0,
+            "error": str(e)
+        }
+
+def normalize_heatmap(hm):
+    """Normalize heatmap to sum to 1"""
+    total = np.sum(hm)
+    return hm / total if total != 0 else hm
+
+def calculate_correlation_metrics(gaze_heatmap, cursor_heatmap):
+    """
+    Calculate correlation metrics between gaze and cursor heatmaps
+    
+    Args:
+        gaze_heatmap: 2D numpy array of gaze heatmap
+        cursor_heatmap: 2D numpy array of cursor heatmap
+        
+    Returns:
+        Dictionary of correlation metrics
+    """
+    print(f"calculate_correlation_metrics called with heatmaps of shapes: gaze={gaze_heatmap.shape if gaze_heatmap is not None else 'None'}, cursor={cursor_heatmap.shape if cursor_heatmap is not None else 'None'}")
+    
+    # Validate inputs at start
+    if gaze_heatmap is None or cursor_heatmap is None:
+        print("Error: One or both heatmaps are None")
+        return {
+            "correlation_coefficient": 0,
+            "histogram_intersection": 0,
+            "kl_divergence": 0,
+            "iou": 0,
+            "common_hotspots": 0,
+            "hotspot_locations": [],
+            "error": "Missing heatmap data"
+        }
+    
+    if not isinstance(gaze_heatmap, np.ndarray) or not isinstance(cursor_heatmap, np.ndarray):
+        print(f"Error: Heatmaps are not numpy arrays: gaze={type(gaze_heatmap)}, cursor={type(cursor_heatmap)}")
+        return {
+            "correlation_coefficient": 0,
+            "histogram_intersection": 0,
+            "kl_divergence": 0,
+            "iou": 0,
+            "common_hotspots": 0,
+            "hotspot_locations": [],
+            "error": "Invalid heatmap data types"
+        }
+    
+    if gaze_heatmap.size == 0 or cursor_heatmap.size == 0:
+        print(f"Error: One or both heatmaps are empty: gaze size={gaze_heatmap.size}, cursor size={cursor_heatmap.size}")
+        return {
+            "correlation_coefficient": 0,
+            "histogram_intersection": 0,
+            "kl_divergence": 0,
+            "iou": 0,
+            "common_hotspots": 0,
+            "hotspot_locations": [],
+            "error": "Empty heatmap data"
+        }
+    
+    try:
+        # Normalize both heatmaps
+        gaze_norm = normalize_heatmap(gaze_heatmap)
+        cursor_norm = normalize_heatmap(cursor_heatmap)
+        
+        print(f"Normalized heatmaps - gaze: min={gaze_norm.min()}, max={gaze_norm.max()}, mean={gaze_norm.mean()}")
+        print(f"Normalized heatmaps - cursor: min={cursor_norm.min()}, max={cursor_norm.max()}, mean={cursor_norm.mean()}")
+        
+        # Calculate Pearson's Correlation Coefficient
+        cc = np.corrcoef(gaze_norm.flatten(), cursor_norm.flatten())[0, 1]
+        print(f"Calculated correlation coefficient: {cc}")
+        
+        # Calculate Histogram Intersection
+        hi = np.sum(np.minimum(gaze_norm, cursor_norm))
+        print(f"Calculated histogram intersection: {hi}")
+        
+        # Calculate KL Divergence (with small epsilon to avoid log(0))
+        epsilon = 1e-10
+        kl = np.sum(gaze_norm * np.log((gaze_norm + epsilon) / (cursor_norm + epsilon)))
+        print(f"Calculated KL divergence: {kl}")
+        
+        # Calculate IoU for hotspots (using 90th percentile threshold)
+        threshold = 0.9
+        try:
+            t1 = np.percentile(gaze_norm, threshold * 100)
+            t2 = np.percentile(cursor_norm, threshold * 100)
+            print(f"Percentile thresholds - gaze: {t1}, cursor: {t2}")
+            
+            mask1 = gaze_norm >= t1
+            mask2 = cursor_norm >= t2
+            
+            intersection = np.logical_and(mask1, mask2).sum()
+            union = np.logical_or(mask1, mask2).sum()
+            iou = intersection / union if union != 0 else 0
+            print(f"IoU calculation - intersection: {intersection}, union: {union}, iou: {iou}")
+            
+            # Find common hotspots
+            common_hotspots = np.argwhere(np.logical_and(mask1, mask2))
+            hotspot_count = len(common_hotspots)
+            print(f"Found {hotspot_count} common hotspots")
+        except Exception as iou_error:
+            print(f"Error calculating IoU: {str(iou_error)}")
+            iou = 0
+            hotspot_count = 0
+            common_hotspots = np.array([])
+        
+        result = {
+            "correlation_coefficient": float(cc),
+            "histogram_intersection": float(hi),
+            "kl_divergence": float(kl),
+            "iou": float(iou),
+            "common_hotspots": hotspot_count,
+            "hotspot_locations": common_hotspots.tolist() if hotspot_count > 0 else []
+        }
+        
+        print(f"Returning correlation metrics: {result}")
+        return result
+    except Exception as e:
+        print(f"Error calculating correlation metrics: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "correlation_coefficient": 0,
+            "histogram_intersection": 0,
+            "kl_divergence": 0,
+            "iou": 0,
+            "common_hotspots": 0,
+            "hotspot_locations": [],
             "error": str(e)
         } 

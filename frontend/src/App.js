@@ -12,6 +12,7 @@ import HeatmapViewer from './components/HeatmapViewer';
 import Recordings from './components/Recordings';
 import RecordingPlayer from './components/RecordingPlayer';
 import DataAnalysis from './components/DataAnalysis';
+import DebugHeatmap from './components/DebugHeatmap';
 import './App.css';
 
 // Protected Route component
@@ -98,6 +99,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <DataAnalysis />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/debug/heatmap" 
+                  element={
+                    <ProtectedRoute>
+                      <DebugHeatmap />
                     </ProtectedRoute>
                   } 
                 />

@@ -4,6 +4,9 @@
   margin: 0 auto;
   padding: 20px;
   font-family: Arial, sans-serif;
+  position: relative;
+  width: 100%;
+  max-width: 100%;
 }
 
 .heatmap-header {
@@ -327,10 +330,36 @@
 
 .metric-group {
   margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.metric-group h4 {
+  color: #333;
+  margin: 0 0 15px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 1.1rem;
+}
+
+.metric-group.correlation {
+  background-color: #f0f7ff;
+  border-left: 4px solid #4a90e2;
+}
+
+.metric-group.correlation h4 {
+  color: #2c5282;
 }
 
 .stat-grid.advanced {
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 15px;
+}
+
+.stat-grid.advanced.correlation {
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
 }
 
 .advanced-metrics-container {
@@ -548,4 +577,300 @@
   background-color: rgba(0, 0, 0, 0.5);
   padding: 4px 10px;
   border-radius: 4px;
+}
+
+/* Advanced Metrics Container */
+.advanced-metrics-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.metric-group {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.metric-group h4 {
+  color: #2c3e50;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e9ecef;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* Special styling for correlation metrics group */
+.metric-group.correlation {
+  background: #f0f7ff;
+  border-left: 4px solid #4a90e2;
+}
+
+.metric-group.correlation h4 {
+  color: #2c3e50;
+  border-bottom-color: #d1e3ff;
+}
+
+/* Stats Grid */
+.stat-grid.advanced {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* Metric Cards */
+.stat-card {
+  background: white;
+  padding: 1rem;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: help;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+/* Tooltip */
+.stat-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2c3e50;
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  width: max-content;
+  max-width: 300px;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+}
+
+.stat-card:hover .stat-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.range-info {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 0.8rem;
+  color: #e9ecef;
+}
+
+.range-info small {
+  display: block;
+  margin: 0.25rem 0;
+}
+
+/* Chart View */
+.metrics-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.chart-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.chart-label {
+  min-width: 120px;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.chart-bar-container {
+  flex: 1;
+  height: 24px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.chart-bar {
+  height: 100%;
+  background: #4a90e2;
+  transition: width 0.3s ease;
+  border-radius: 12px;
+}
+
+.chart-value {
+  min-width: 60px;
+  text-align: right;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+/* Color indicators for metric values */
+.stat-card .stat-value.good { color: #4CAF50; }
+.stat-card .stat-value.warning { color: #FFC107; }
+.stat-card .stat-value.poor { color: #F44336; }
+
+/* Metrics Explanation Section */
+.metrics-explanation {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #4a90e2;
+}
+
+.metrics-explanation h5 {
+  color: #2c3e50;
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+}
+
+.color-legend {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.color-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+}
+
+.color-dot.green { background: #4CAF50; }
+.color-dot.yellow { background: #FFC107; }
+.color-dot.red { background: #F44336; }
+
+/* Advanced Stats Header */
+.advanced-stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.advanced-stats-title {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.2rem;
+}
+
+.viz-toggle-button {
+  padding: 0.5rem 1rem;
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.viz-toggle-button:hover {
+  background: #357abd;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .stat-grid.advanced {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+  
+  .chart-label {
+    min-width: 100px;
+  }
+  
+  .metrics-explanation {
+    margin-top: 1rem;
+  }
+  
+  .color-legend {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+/* Fullscreen mode adjustments */
+.fullscreen-overlay .advanced-metrics-container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* Animation for metric cards */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.stat-card {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Hover effects for metric groups */
+.metric-group:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Special styling for correlation metrics */
+.metric-group.correlation .stat-card {
+  background: #f8fbff;
+  border: 1px solid #e3f2fd;
+}
+
+.metric-group.correlation .stat-card:hover {
+  background: #f0f7ff;
+  border-color: #bbdefb;
+}
+
+/* Tooltip arrow */
+.stat-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: #2c3e50 transparent transparent transparent;
 } 

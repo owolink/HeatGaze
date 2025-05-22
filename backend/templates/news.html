@@ -3,136 +3,468 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Новости - HeatGaze Demo</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/demo.css">
+    <title>Новостной портал - HeatGaze Demo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'PT Serif', Georgia, serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            color: #222;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+        }
+        .demo-header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px 0;
+            position: relative;
+        }
+        .demo-title {
+            margin: 0;
+            padding: 0 20px;
+        }
+        .demo-nav {
+            display: flex;
+            justify-content: center;
+            background-color: #34495e;
+            padding: 10px 0;
+        }
+        .nav-item {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        .nav-item:hover, .nav-item.active {
+            background-color: #3498db;
+        }
+        .main-content {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .sidebar {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .news-header {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        .news-search {
+            padding: 10px;
+            width: 100%;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .article {
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #eee;
+        }
+        .article:last-child {
+            border-bottom: none;
+        }
+        .article-title {
+            font-size: 28px;
+            margin-bottom: 10px;
+            line-height: 1.3;
+        }
+        .article-meta {
+            display: flex;
+            justify-content: space-between;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        .article-category {
+            background-color: #f0f0f0;
+            padding: 3px 8px;
+            border-radius: 3px;
+        }
+        .article-content {
+            font-size: 17px;
+            line-height: 1.7;
+            margin-bottom: 20px;
+            text-align: justify;
+        }
+        .article-content p {
+            margin-bottom: 15px;
+        }
+        .read-more {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .sidebar-title {
+            font-size: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+            margin-bottom: 20px;
+        }
+        .popular-articles {
+            margin-bottom: 30px;
+        }
+        .popular-article {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .popular-article-title {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        .popular-article-meta {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        .related-topics {
+            margin-bottom: 30px;
+        }
+        .topic-tags {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .topic-tag {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            padding: 5px 10px;
+            margin: 0 5px 5px 0;
+            border-radius: 3px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .subscribe-form {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        .subscribe-input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .subscribe-button {
+            width: 100%;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .subscribe-button:hover {
+            background-color: #2980b9;
+        }
+        .advertisement {
+            margin: 30px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #eee;
+            text-align: center;
+            color: #555;
+        }
+        footer {
+            background-color: #2c3e50;
+            color: white;
+            padding: 30px 0;
+            text-align: center;
+            font-size: 14px;
+        }
+        footer a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .footer-link {
+            margin: 0 15px;
+        }
+        #gaze {
+            position: absolute;
+            display: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: solid 2px rgba(255, 0, 0, 0.7);
+            box-shadow: 0 0 15px 3px rgba(255, 0, 0, 0.3);
+            pointer-events: none;
+            z-index: 999999;
+        }
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            .article-title {
+                font-size: 24px;
+            }
+        }
+    </style>
+    <script src="https://api.gazerecorder.com/GazeCloudAPI.js"></script>
 </head>
 <body>
-    <header class="header">
-        <div class="container">
-            <h1 class="logo">НовостиОнлайн</h1>
-            <nav class="nav">
-                <ul>
-                    <li><a href="/api/demo/news-page" class="active">Все новости</a></li>
-                    <li><a href="/api/demo/news-page?category=Технологии">Технологии</a></li>
-                    <li><a href="/api/demo/news-page?category=Разработка">Разработка</a></li>
-                    <li><a href="/api/demo/news-page?category=Маркетинг">Маркетинг</a></li>
-                    <li><a href="/api/demo/weather-page">Погода</a></li>
-                </ul>
-            </nav>
+    <!-- Gaze visualization element -->
+    <div id="gaze"></div>
+
+    <div class="demo-header">
+        <div class="demo-title">
+            <h1>Новостной портал</h1>
         </div>
-    </header>
+    </div>
+    
+    <div class="demo-nav">
+        <a href="/demo/weather-page" class="nav-item"><i class="fas fa-cloud-sun"></i> Погода</a>
+        <a href="/demo/news-page" class="nav-item active"><i class="fas fa-newspaper"></i> Новости</a>
+        <a href="/api/demo/completed" class="nav-item"><i class="fas fa-check-circle"></i> Завершить демо</a>
+    </div>
 
-    <main>
-        <section class="news-header">
-            <div class="container">
-                <h2>Последние новости</h2>
-                <p class="current-date">{{ current_date }}</p>
+    <div class="container">
+        <main class="main-content">
+            <div class="news-header">
+                <input type="text" class="news-search" placeholder="Поиск новостей...">
             </div>
-        </section>
 
-        <section class="news-grid">
-            <div class="container">
-                <div class="featured-news">
-                    <article class="news-card featured">
-                        <div class="news-image" style="background-color: #f0f0f0;">
-                            
-                        </div>
-                        <div class="news-content">
-                            <span class="news-category">{{ news[0].category }}</span>
-                            <h3 class="news-title">{{ news[0].title }}</h3>
-                            <p class="news-excerpt">{{ news[0].content[:200] }}...</p>
-                            <div class="news-meta">
-                                <span class="news-date">{{ news[0].date }}</span>
-                                <span class="news-author">{{ news[0].author }}</span>
-                            </div>
-                            <a href="/api/demo/news-page?article={{ news[0].id }}" class="read-more">Читать далее</a>
-                        </div>
-                    </article>
+            <article class="article">
+                <h2 class="article-title">Новый метод анализа взгляда позволяет улучшить пользовательский опыт</h2>
+                <div class="article-meta">
+                    <span class="article-date">30 марта 2025</span>
+                    <span class="article-author">Автор: Иван Петров</span>
+                    <span class="article-category">Технологии</span>
                 </div>
+                <div class="article-content">
+                    <p>Исследователи разработали новый метод анализа данных о движении глаз, который позволяет значительно улучшить пользовательский опыт на сайтах и в приложениях. Метод основан на применении алгоритмов машинного обучения для выявления паттернов в движениях глаз пользователей.</p>
+                    <p>"Наше исследование показывает, что анализ тепловых карт на основе взгляда может выявить проблемы в интерфейсе, которые невозможно обнаружить другими методами", — говорит руководитель исследования. Технология уже применяется на нескольких крупных сайтах и показывает значительное улучшение показателей конверсии.</p>
+                    <p>Системы отслеживания взгляда стали доступнее в последние годы, что делает их применение в пользовательских исследованиях более распространенным. Однако интерпретация данных о движении глаз остается сложной задачей. Новый метод анализа позволяет автоматически выявлять проблемные места в интерфейсе и предлагать рекомендации по их улучшению.</p>
+                    <a href="#" class="read-more">Читать далее...</a>
+                </div>
+            </article>
 
-                <div class="news-list">
-                    {% for article in news[1:] %}
-                    <article class="news-card">
-                        <div class="news-image" style="background-color: #f0f0f0;">
-                        </div>
-                        <div class="news-content">
-                            <span class="news-category">{{ article.category }}</span>
-                            <h3 class="news-title">{{ article.title }}</h3>
-                            <p class="news-excerpt">{{ article.content[:100] }}...</p>
-                            <div class="news-meta">
-                                <span class="news-date">{{ article.date }}</span>
-                                <span class="news-author">{{ article.author }}</span>
-                            </div>
-                            <a href="/api/demo/news-page?article={{ article.id }}" class="read-more">Читать далее</a>
-                        </div>
-                    </article>
-                    {% endfor %}
+            <article class="article">
+                <h2 class="article-title">Разработчики представили новый формат отображения данных для тепловых карт</h2>
+                <div class="article-meta">
+                    <span class="article-date">29 марта 2025</span>
+                    <span class="article-author">Автор: Мария Сидорова</span>
+                    <span class="article-category">Разработка</span>
+                </div>
+                <div class="article-content">
+                    <p>Команда разработчиков из компании "ТехноВижн" представила новый формат визуализации данных для тепловых карт, который позволяет более точно отображать области внимания пользователей. Формат получил название "HeatViz" и уже доступен для тестирования.</p>
+                    <p>Основное преимущество нового формата заключается в возможности отображения временной динамики внимания пользователя, что позволяет оценить не только где, но и когда пользователь обращает внимание на определенные элементы интерфейса.</p>
+                    <p>"Мы разработали этот формат, чтобы помочь дизайнерам и маркетологам лучше понимать поведение пользователей", — сообщил главный разработчик проекта. "Традиционные тепловые карты показывают только общую картину, но не дают представления о последовательности взаимодействия. Наш формат решает эту проблему."</p>
+                    <a href="#" class="read-more">Читать далее...</a>
+                </div>
+            </article>
+
+            <article class="article">
+                <h2 class="article-title">Как тепловые карты помогают оптимизировать конверсию на сайтах</h2>
+                <div class="article-meta">
+                    <span class="article-date">28 марта 2025</span>
+                    <span class="article-author">Автор: Алексей Кузнецов</span>
+                    <span class="article-category">Маркетинг</span>
+                </div>
+                <div class="article-content">
+                    <p>Исследование, проведенное аналитической компанией "WebAnalyst", показало, что использование тепловых карт для анализа поведения пользователей может увеличить конверсию сайта на 15-25%. В исследовании приняли участие более 100 сайтов из различных отраслей.</p>
+                    <p>Основные выводы исследования:</p>
+                    <p>1. Тепловые карты позволяют выявить неэффективные элементы интерфейса, которые не привлекают внимание пользователей.<br>
+                    2. Анализ движения взгляда помогает оптимизировать расположение ключевых элементов на странице.<br>
+                    3. Компании, регулярно использующие тепловые карты для анализа, демонстрируют более высокие показатели удержания пользователей.</p>
+                    <p>"Самое удивительное открытие заключается в том, что многие элементы, которые дизайнеры считают важными, часто остаются незамеченными пользователями", — отметил руководитель исследования.</p>
+                    <a href="#" class="read-more">Читать далее...</a>
+                </div>
+            </article>
+
+            <div class="advertisement">
+                Рекламное объявление — Узнайте больше о решениях HeatGaze для вашего бизнеса
+            </div>
+
+            <article class="article">
+                <h2 class="article-title">Нейросети научились предсказывать движение взгляда пользователя</h2>
+                <div class="article-meta">
+                    <span class="article-date">27 марта 2025</span>
+                    <span class="article-author">Автор: Елена Смирнова</span>
+                    <span class="article-category">Искусственный интеллект</span>
+                </div>
+                <div class="article-content">
+                    <p>Исследователи из Института искусственного интеллекта разработали нейросеть, способную предсказывать маршрут взгляда пользователя на веб-странице с точностью до 85%. Это открытие может революционизировать подход к проектированию веб-интерфейсов.</p>
+                    <p>"Нейросеть анализирует структуру страницы и предсказывает, как пользователь будет взаимодействовать с ней визуально", — поясняет ведущий исследователь проекта. "Это позволяет дизайнерам оптимизировать расположение элементов еще до проведения тестирования с реальными пользователями".</p>
+                    <p>Технология уже интегрирована в несколько популярных инструментов веб-дизайна и показывает обнадеживающие результаты. Разработчики планируют выпустить общедоступную версию инструмента в ближайшие месяцы.</p>
+                    <a href="#" class="read-more">Читать далее...</a>
+                </div>
+            </article>
+
+            <article class="article">
+                <h2 class="article-title">Новое исследование: 70% пользователей не замечают баннеры на сайтах</h2>
+                <div class="article-meta">
+                    <span class="article-date">26 марта 2025</span>
+                    <span class="article-author">Автор: Дмитрий Волков</span>
+                    <span class="article-category">UX Исследования</span>
+                </div>
+                <div class="article-content">
+                    <p>Согласно новому исследованию, проведенному компанией "UserEye", около 70% пользователей практически не обращают внимания на рекламные баннеры на веб-сайтах. Исследование основано на анализе данных о движении глаз более 10,000 пользователей при посещении различных типов сайтов.</p>
+                    <p>"Мы наблюдаем явление, которое называется 'баннерная слепота'", — комментирует руководитель исследования. "Пользователи научились игнорировать области, которые выглядят как реклама, даже если там содержится полезная информация".</p>
+                    <p>Исследование также выявило, что нестандартное размещение важной информации в "слепых зонах" может привести к потере до 50% конверсии. Эксперты рекомендуют регулярно проводить тестирование с использованием технологий отслеживания взгляда для выявления таких зон на сайтах.</p>
+                    <a href="#" class="read-more">Читать далее...</a>
+                </div>
+            </article>
+        </main>
+
+        <aside class="sidebar">
+            <div class="popular-articles">
+                <h3 class="sidebar-title">Популярные статьи</h3>
+                <div class="popular-article">
+                    <h4 class="popular-article-title">Как оптимизировать интерфейс с помощью тепловых карт</h4>
+                    <div class="popular-article-meta">25 марта 2025 • 1243 просмотра</div>
+                </div>
+                <div class="popular-article">
+                    <h4 class="popular-article-title">10 советов по улучшению UX на основе данных о взгляде</h4>
+                    <div class="popular-article-meta">24 марта 2025 • 987 просмотров</div>
+                </div>
+                <div class="popular-article">
+                    <h4 class="popular-article-title">Будущее веб-дизайна: адаптивные интерфейсы на основе AI</h4>
+                    <div class="popular-article-meta">23 марта 2025 • 845 просмотров</div>
+                </div>
+                <div class="popular-article">
+                    <h4 class="popular-article-title">Сравнение технологий отслеживания взгляда: что выбрать?</h4>
+                    <div class="popular-article-meta">22 марта 2025 • 732 просмотра</div>
+                </div>
+                <div class="popular-article">
+                    <h4 class="popular-article-title">История развития систем для анализа внимания пользователей</h4>
+                    <div class="popular-article-meta">21 марта 2025 • 615 просмотров</div>
                 </div>
             </div>
-        </section>
 
-        <section class="sidebar">
-            <div class="container">
-                <div class="popular-news">
-                    <h3>Популярные новости</h3>
-                    <ul>
-                        {% for article in news[:3] %}
-                        <li>
-                            <a href="/api/demo/news-page?article={{ article.id }}">{{ article.title }}</a>
-                            <span class="sidebar-date">{{ article.date }}</span>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-
-                <div class="categories">
-                    <h3>Категории</h3>
-                    <ul>
-                        <li><a href="/api/demo/news-page?category=Технологии">Технологии</a></li>
-                        <li><a href="/api/demo/news-page?category=Разработка">Разработка</a></li>
-                        <li><a href="/api/demo/news-page?category=Маркетинг">Маркетинг</a></li>
-                        <li><a href="/api/demo/news-page?category=Искусственный интеллект">Искусственный интеллект</a></li>
-                        <li><a href="/api/demo/news-page?category=UX Исследования">UX Исследования</a></li>
-                    </ul>
-                </div>
-
-                <div class="advertisement">
-                    <h3>Реклама</h3>
-                    <div class="ad-banner">
-                        <p>Место для вашей рекламы</p>
-                    </div>
+            <div class="related-topics">
+                <h3 class="sidebar-title">Связанные темы</h3>
+                <div class="topic-tags">
+                    <span class="topic-tag">UX/UI дизайн</span>
+                    <span class="topic-tag">Юзабилити</span>
+                    <span class="topic-tag">Тепловые карты</span>
+                    <span class="topic-tag">Аналитика</span>
+                    <span class="topic-tag">Отслеживание взгляда</span>
+                    <span class="topic-tag">Машинное обучение</span>
+                    <span class="topic-tag">Искусственный интеллект</span>
+                    <span class="topic-tag">Веб-разработка</span>
+                    <span class="topic-tag">Конверсия</span>
+                    <span class="topic-tag">Интерфейсы</span>
                 </div>
             </div>
-        </section>
-    </main>
 
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-logo">
-                    <h2>НовостиОнлайн</h2>
-                    <p>Актуальные новости и события</p>
-                </div>
-                <div class="footer-links">
-                    <h3>Быстрые ссылки</h3>
-                    <ul>
-                        <li><a href="/api/demo/news-page">Главная</a></li>
-                        <li><a href="/api/demo/news-page?category=Технологии">Технологии</a></li>
-                        <li><a href="/api/demo/news-page?category=Разработка">Разработка</a></li>
-                        <li><a href="/api/demo/weather-page">Погода</a></li>
-                    </ul>
-                </div>
-                <div class="footer-contact">
-                    <h3>Контакты</h3>
-                    <p>Email: info@news-online.com</p>
-                    <p>Телефон: +7 (123) 456-78-90</p>
-                </div>
+            <div class="advertisement">
+                Специальное предложение: Скидка 20% на сервисы HeatGaze
             </div>
-            <div class="footer-bottom">
-                <p>&copy; 2025 НовостиОнлайн. Все права защищены.</p>
+
+            <div class="subscribe-form">
+                <h3 class="sidebar-title">Подписаться на рассылку</h3>
+                <input type="email" class="subscribe-input" placeholder="Ваш email...">
+                <button class="subscribe-button">Подписаться</button>
             </div>
+        </aside>
+    </div>
+
+    <footer>
+        <div class="footer-links">
+            <a href="#" class="footer-link">О нас</a>
+            <a href="#" class="footer-link">Контакты</a>
+            <a href="#" class="footer-link">Условия использования</a>
+            <a href="#" class="footer-link">Политика конфиденциальности</a>
+            <a href="#" class="footer-link">Карта сайта</a>
         </div>
+        <p>© 2025 Новостной портал HeatGaze. Все права защищены.</p>
     </footer>
+
+    <script>
+        // GazeCloudAPI integration
+        function PlotGaze(GazeData) {
+            // Update gaze point position
+            var x = GazeData.docX;
+            var y = GazeData.docY;
+            var gaze = document.getElementById("gaze");
+            x -= gaze.clientWidth/2;
+            y -= gaze.clientHeight/2;
+            
+            gaze.style.left = x + "px";
+            gaze.style.top = y + "px";
+            
+            // Show/hide gaze point based on state
+            if (GazeData.state != 0) {
+                if (gaze.style.display == 'block')
+                    gaze.style.display = 'none';
+            } else {
+                if (gaze.style.display == 'none')
+                    gaze.style.display = 'block';
+            }
+        }
+        
+        // Set up GazeCloudAPI callbacks
+        window.addEventListener("load", function() {
+            GazeCloudAPI.OnCalibrationComplete = function() {
+                console.log('Gaze Calibration Complete');
+            };
+            
+            GazeCloudAPI.OnCamDenied = function() {
+                console.log('Camera access denied');
+                alert('Camera access is required for eye tracking. Please allow camera access and refresh the page.');
+            };
+            
+            GazeCloudAPI.OnError = function(msg) {
+                console.error('GazeCloudAPI Error:', msg);
+            };
+            
+            GazeCloudAPI.UseClickRecalibration = true;
+            GazeCloudAPI.OnResult = PlotGaze;
+        });
+
+        // Simulate interactions
+        document.querySelectorAll('.read-more').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                alert('Функция "Читать далее" не реализована в демо-версии');
+            });
+        });
+
+        document.querySelectorAll('.topic-tag').forEach(tag => {
+            tag.addEventListener('click', function() {
+                alert('Переход к теме "' + this.textContent + '" не реализован в демо-версии');
+            });
+        });
+
+        document.querySelectorAll('.popular-article').forEach(article => {
+            article.addEventListener('click', function() {
+                alert('Переход к статье не реализован в демо-версии');
+            });
+        });
+
+        document.querySelector('.subscribe-button').addEventListener('click', function() {
+            const email = document.querySelector('.subscribe-input').value;
+            if (email) {
+                alert('Подписка на email ' + email + ' оформлена успешно!');
+                document.querySelector('.subscribe-input').value = '';
+            } else {
+                alert('Пожалуйста, введите email для подписки');
+            }
+        });
+    </script>
 </body>
 </html> 

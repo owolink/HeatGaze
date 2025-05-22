@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import SessionPlayer from './SessionPlayer';
 import './HeatmapViewer.css';
+import { inspectStructure, checkForZeroValues } from '../utils/debug';
+import { detectHotspots, convertImageToIntensityMap, findCommonHotspots } from '../utils/heatmapAnalysis';
 
 // Metric helper component with tooltip
-const MetricCard = ({ label, value, description, suffix = '', color = '#4a90e2', min = null, max = null, optimal = null, reversed = false }) => {
+const MetricCard = ({ label, value, description, suffix = '', color = '#4a90e2', min = null, max = null, optimal = null, reversed = false, colorClass = '' }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   
   // Determine color based on value range if min and max are provided
@@ -35,7 +37,7 @@ const MetricCard = ({ label, value, description, suffix = '', color = '#4a90e2',
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
-      <div className="stat-value" style={{ color: dynamicColor }}>{value}{suffix}</div>
+      <div className={`stat-value ${colorClass}`} style={{ color: dynamicColor }}>{value}{suffix}</div>
       <div className="stat-label">{label}</div>
       {description && showTooltip && (
         <div className="stat-tooltip">
@@ -53,7 +55,13 @@ const MetricCard = ({ label, value, description, suffix = '', color = '#4a90e2',
 };
 
 // Advanced metrics visualization component
-const AdvancedMetricsViz = ({ stats, vizMode }) => {
+const AdvancedMetricsViz = ({ stats, vizMode, correlationMetrics }) => {
+  // Log what's being passed to the component
+  console.log("AdvancedMetricsViz received:", {
+    stats: stats ? Object.keys(stats) : "none",
+    correlationMetrics: correlationMetrics ? Object.keys(correlationMetrics) : "none"
+  });
+  
   if (vizMode === 'chart') {
     // Simple bar chart for metrics
     const metrics = [
@@ -66,12 +74,40 @@ const AdvancedMetricsViz = ({ stats, vizMode }) => {
       { key: 'std_dev', label: 'Std Deviation', max: 0.5 }
     ];
     
+    // Add correlation metrics to chart if available
+    if (correlationMetrics) {
+      const correlationMetricItems = [
+        { key: 'correlation_coefficient', label: 'PCC', max: 1 },
+        { key: 'histogram_intersection', label: 'HI', max: 1 },
+        { key: 'kl_divergence', label: 'KLD', max: 2, reversed: true },
+        { key: 'iou', label: 'IoU', max: 1 },
+        { key: 'common_hotspots', label: 'Hotspots', max: 10 }
+      ];
+      
+      // Only add metrics that exist in correlationMetrics
+      correlationMetricItems.forEach(item => {
+        if (correlationMetrics[item.key] !== undefined) {
+          metrics.push(item);
+        }
+      });
+    }
+    
     return (
       <div className="metrics-chart">
         {metrics.map(metric => {
+          // Determine where to get the value from
+          let value = stats[metric.key];
+          
+          // If this is a correlation metric and we have correlation metrics, use that value
+          if (correlationMetrics && correlationMetrics[metric.key] !== undefined) {
+            value = correlationMetrics[metric.key];
+          }
+          
+          // Skip if no value
+          if (value === undefined) return null;
+          
           // Determine color based on value range
           let barColor = '#4a90e2';
-          const value = stats[metric.key] || 0;
           const optimal = metric.key === 'kld' ? 0 : metric.max * 0.7;
           const normalizedValue = metric.reversed 
             ? 1 - (value / metric.max) 
@@ -96,7 +132,7 @@ const AdvancedMetricsViz = ({ stats, vizMode }) => {
                     backgroundColor: barColor
                   }}
                 />
-                <div className="chart-value">{value}</div>
+                <div className="chart-value">{typeof value === 'number' ? value.toFixed(2) : value}</div>
               </div>
             </div>
           );
@@ -113,8 +149,9 @@ const AdvancedMetricsViz = ({ stats, vizMode }) => {
       reversed: true
     },
     nss: { 
-      min: -3, max: 3, optimal: 1.5, 
-      description: "Normalized Scanpath Saliency. Higher values indicate better alignment of fixations with salient regions." 
+      min: -2, max: 3, optimal: 1.5, 
+      description: "Normalized Scanpath Saliency (NSS). Typical range: -2 to 3. Values > 1 indicate high relevance of fixation points, values < 0 indicate fixations in non-relevant areas.",
+      label: "NSS"
     },
     similarity: { 
       min: 0, max: 1, optimal: 0.7, 
@@ -151,6 +188,41 @@ const AdvancedMetricsViz = ({ stats, vizMode }) => {
     mean_gradient: { 
       min: 0, max: 0.3, optimal: 0.15, 
       description: "Average rate of change in intensity. Higher values indicate more defined focus boundaries."
+    },
+    correlation_coefficient: { 
+      min: -1, max: 1, optimal: 0.7, 
+      description: "Pearson's Correlation Coefficient (PCC). Range: -1 to 1. 1 indicates perfect positive correlation, 0 indicates no linear relationship, -1 indicates perfect negative correlation.",
+      label: "Correlation Coefficient"
+    },
+    histogram_intersection: { 
+      min: 0, max: 1, optimal: 0.7, 
+      description: "Histogram Intersection. Range: 0 to 1. Higher values indicate more similar distributions between gaze and cursor heatmaps.",
+      label: "Histogram Intersection"
+    },
+    kl_divergence: { 
+      min: 0, max: 2, optimal: 0.5, reversed: true,
+      description: "Kullback-Leibler divergence between gaze and cursor distributions. Lower values indicate more similar distributions.",
+      label: "KL Divergence"
+    },
+    iou: { 
+      min: 0, max: 1, optimal: 0.7, 
+      description: "Intersection over Union (IoU). Range: 0 to 1. 1 indicates perfect overlap of binary maps, 0 indicates no overlap.",
+      label: "IoU"
+    },
+    common_hotspots: { 
+      min: 0, max: 10, optimal: 3, 
+      description: "Number of significant attention regions that appear in both gaze and cursor heatmaps. Identified by thresholding and finding overlapping high-intensity areas.",
+      label: "Common Hotspots"
+    },
+    gaze_hotspots: {
+      min: 0, max: 10, optimal: 3,
+      description: "Number of distinct high-attention regions in the gaze heatmap, detected using thresholding and connected component analysis.",
+      label: "Gaze Hotspots"
+    },
+    cursor_hotspots: {
+      min: 0, max: 10, optimal: 3,
+      description: "Number of distinct high-activity regions in the cursor heatmap, detected using thresholding and connected component analysis.",
+      label: "Cursor Hotspots"
     }
   };
   
@@ -170,7 +242,14 @@ const AdvancedMetricsViz = ({ stats, vizMode }) => {
       { key: 'high_activity_proportion', label: 'High Activity', suffix: '%' },
       { key: 'low_activity_proportion', label: 'Low Activity', suffix: '%' },
       { key: 'mean_gradient', label: 'Gradient' }
-    ]
+    ],
+    correlation: correlationMetrics ? [
+      { key: 'correlation_coefficient', label: 'PCC' },
+      { key: 'histogram_intersection', label: 'HI' },
+      { key: 'kl_divergence', label: 'KLD' },
+      { key: 'iou', label: 'IoU' },
+      { key: 'common_hotspots', label: 'Hotspots' }
+    ] : []
   };
   
   // Cards view (default)
@@ -180,6 +259,44 @@ const AdvancedMetricsViz = ({ stats, vizMode }) => {
         <h4>Attention Metrics</h4>
         <div className="stat-grid advanced">
           {metricGroups.attention.map(metric => {
+            // Skip metrics that don't exist in stats
+            if (stats[metric.key] === undefined && 
+                (!correlationMetrics || correlationMetrics[metric.key] === undefined)) {
+              return null;
+            }
+            
+            const config = metricConfig[metric.key];
+            // Determine which source to use for the value
+            const value = correlationMetrics && correlationMetrics[metric.key] !== undefined 
+              ? correlationMetrics[metric.key] 
+              : stats[metric.key];
+            
+            return (
+              <MetricCard 
+                key={metric.key}
+                label={metric.label}
+                value={value !== undefined ? value : 0}
+                description={config.description}
+                suffix={metric.suffix || config.suffix || ''}
+                min={config.min}
+                max={config.max}
+                optimal={config.optimal}
+                reversed={config.reversed}
+              />
+            );
+          })}
+        </div>
+      </div>
+      
+      <div className="metric-group">
+        <h4>Intensity Metrics</h4>
+        <div className="stat-grid advanced">
+          {metricGroups.intensity.map(metric => {
+            // Skip metrics that don't exist in stats
+            if (stats[metric.key] === undefined) {
+              return null;
+            }
+            
             const config = metricConfig[metric.key];
             return (
               <MetricCard 
@@ -198,45 +315,68 @@ const AdvancedMetricsViz = ({ stats, vizMode }) => {
         </div>
       </div>
       
-      <div className="metric-group">
-        <h4>Intensity Metrics</h4>
-        <div className="stat-grid advanced">
-          {metricGroups.intensity.map(metric => {
-            const config = metricConfig[metric.key];
-            return (
-              <MetricCard 
-                key={metric.key}
-                label={metric.label}
-                value={stats[metric.key] !== undefined ? stats[metric.key] : 0}
-                description={config.description}
-                suffix={metric.suffix || config.suffix || ''}
-                min={config.min}
-                max={config.max}
-                optimal={config.optimal}
-                reversed={config.reversed}
-              />
-            );
-          })}
+      {correlationMetrics && Object.values(correlationMetrics).some(value => value !== 0) && (
+        <div className="metric-group correlation">
+          <h4>Gaze-Cursor Correlation Metrics</h4>
+          <div className="stat-grid advanced correlation">
+            {metricGroups.correlation.map(metric => {
+              const config = metricConfig[metric.key];
+              // Skip metrics that don't exist in correlationMetrics
+              if (correlationMetrics[metric.key] === undefined) {
+                return null;
+              }
+              
+              const value = correlationMetrics[metric.key];
+              // Determine the color class based on the value
+              let colorClass = '';
+              if (value !== undefined) {
+                const normalizedValue = config.reversed 
+                  ? 1 - (value / config.max)
+                  : value / config.max;
+                
+                if (normalizedValue > 0.8) {
+                  colorClass = 'good';
+                } else if (normalizedValue > 0.5) {
+                  colorClass = 'warning';
+                } else {
+                  colorClass = 'poor';
+                }
+              }
+              
+              return (
+                <MetricCard 
+                  key={metric.key}
+                  label={metric.label}
+                  value={value !== undefined ? typeof value === 'number' ? value.toFixed(3) : value : 'N/A'}
+                  description={config.description}
+                  suffix={metric.suffix || config.suffix || ''}
+                  min={config.min}
+                  max={config.max}
+                  optimal={config.optimal}
+                  reversed={config.reversed}
+                  colorClass={colorClass}
+                />
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
 
 // Use React.memo to memoize the entire component
-const HeatmapViewer = React.memo(() => {
+const HeatmapViewer = React.memo(({ currentUser }) => {
   const { id } = useParams();
-  console.log('HeatmapViewer initialized with id:', id);
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
   
   const [heatmap, setHeatmap] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showPlayer, setShowPlayer] = useState(true); 
+  const [showPlayer, setShowPlayer] = useState(true);
+  const [activeView, setActiveView] = useState('gaze');
   const [showAdvancedStats, setShowAdvancedStats] = useState(false);
-  const [advancedStatsVizMode, setAdvancedStatsVizMode] = useState('cards'); // 'cards' or 'chart'
-  const [activeView, setActiveView] = useState('gaze'); // 'gaze' or 'cursor'
+  const [advancedStatsVizMode, setAdvancedStatsVizMode] = useState('cards');
   const [fullscreen, setFullscreen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -339,7 +479,187 @@ const HeatmapViewer = React.memo(() => {
         // Fetch heatmap data by ID using the configured api instance
         const response = await api.get(`/api/sessions/${id}/heatmap`);
         console.log('Heatmap data received:', response.data);
-        setHeatmap(response.data);
+        
+        // Debug the response structure
+        inspectStructure(response.data, 'Heatmap API Response');
+        
+        // ADDED: More detailed logging for correlation metrics
+        console.log('Correlation metrics in response:', response.data.correlationMetrics);
+        console.log('Response structure keys:', Object.keys(response.data));
+        
+        // Variable to hold our final data
+        let finalHeatmapData = response.data;
+        
+        // Check if correlation metrics contain only zeros 
+        if (response.data.correlationMetrics) {
+          checkForZeroValues(response.data.correlationMetrics, 'Correlation Metrics');
+          console.log('Correlation metrics available:', Object.keys(response.data.correlationMetrics));
+        } else {
+          console.warn('No correlation metrics found in the response');
+          
+          // Try to fetch correlation metrics directly if they're not in the main response
+          console.log('Attempting to fetch correlation metrics directly...');
+          try {
+            const metricsResponse = await api.get(`/api/sessions/${id}/correlation_metrics`);
+            console.log('Direct correlation metrics response:', metricsResponse.data);
+            
+            if (metricsResponse.data && Object.keys(metricsResponse.data).length > 0) {
+              // Add the metrics to the final data
+              finalHeatmapData = {
+                ...response.data,
+                correlationMetrics: metricsResponse.data
+              };
+              console.log('Updated heatmap data with correlation metrics:', finalHeatmapData);
+            }
+          } catch (metricsErr) {
+            console.error('Failed to fetch correlation metrics directly:', metricsErr);
+          }
+        }
+        
+        // Try to calculate hotspots if not already provided
+        try {
+          // Only calculate hotspot metrics if they're not already present
+          const needsHotspotMetrics = finalHeatmapData.image && finalHeatmapData.cursorHeatmapUrl && (
+            !finalHeatmapData.correlationMetrics || 
+            finalHeatmapData.correlationMetrics.gaze_hotspots === undefined || 
+            finalHeatmapData.correlationMetrics.cursor_hotspots === undefined ||
+            finalHeatmapData.correlationMetrics.common_hotspots === undefined
+          );
+          
+          if (needsHotspotMetrics) {
+            console.log('Calculating hotspot metrics...');
+            
+            // Start performance measurement
+            if (window.performance) {
+              performance.mark('hotspot-detection-start');
+            }
+            
+            // Convert base64 images to intensity maps
+            const [gazeIntensityMap, cursorIntensityMap] = await Promise.all([
+              convertImageToIntensityMap(finalHeatmapData.image),
+              convertImageToIntensityMap(finalHeatmapData.cursorHeatmapUrl)
+            ]);
+            
+            // Detect hotspots in both heatmaps with optimized parameters for large datasets
+            const hotspotOptions = {
+              downsamplingFactor: 4,  // More aggressive downsampling for large datasets
+              usePercentileThreshold: true,
+              percentile: 93,  // Slightly higher percentile threshold
+              minClusterSize: 25,  // Increase minimum cluster size
+              mergeDistance: 30  // Larger merge distance
+            };
+            
+            console.log('Using optimized hotspot detection parameters:', hotspotOptions);
+            
+            // Progressive fallback strategy for extremely large datasets
+            const detectHotspotsWithFallback = async (intensityMap, options) => {
+              try {
+                // Try with current settings
+                return detectHotspots(intensityMap, options);
+              } catch (err) {
+                console.warn('Initial hotspot detection failed, trying with more aggressive downsampling:', err);
+                
+                // First fallback: More aggressive downsampling
+                try {
+                  const fallbackOptions = {
+                    ...options,
+                    downsamplingFactor: options.downsamplingFactor * 2,  // Double the downsampling
+                    minClusterSize: Math.max(5, Math.floor(options.minClusterSize / 2))  // Adjust for smaller map
+                  };
+                  console.log('Fallback attempt with options:', fallbackOptions);
+                  return detectHotspots(intensityMap, fallbackOptions);
+                } catch (err2) {
+                  console.error('Fallback hotspot detection also failed:', err2);
+                  
+                  // Last resort: Return empty result
+                  return { hotspotCount: 0, hotspots: [] };
+                }
+              }
+            };
+            
+            // Use the fallback strategy for both heatmaps
+            const [gazeHotspots, cursorHotspots] = await Promise.all([
+              detectHotspotsWithFallback(gazeIntensityMap, hotspotOptions),
+              detectHotspotsWithFallback(cursorIntensityMap, hotspotOptions)
+            ]);
+            
+            console.log(`Detected ${gazeHotspots.hotspotCount} gaze hotspots and ${cursorHotspots.hotspotCount} cursor hotspots`);
+            
+            // Find common hotspots with increased max distance
+            const commonHotspots = findCommonHotspots(gazeHotspots.hotspots, cursorHotspots.hotspots, {
+              maxDistance: 60  // Increased from default of 50
+            });
+            
+            // Update the correlation metrics with hotspot information - metrics only
+            const updatedCorrelationMetrics = {
+              ...(finalHeatmapData.correlationMetrics || {}),
+              gaze_hotspots: gazeHotspots.hotspotCount,
+              cursor_hotspots: cursorHotspots.hotspotCount,
+              common_hotspots: commonHotspots.commonCount
+            };
+            
+            // Log performance details
+            console.log('Hotspot detection completed. Performance details:', {
+              gazeMapSize: `${gazeIntensityMap[0]?.length || 0}x${gazeIntensityMap.length || 0}`,
+              cursorMapSize: `${cursorIntensityMap[0]?.length || 0}x${cursorIntensityMap.length || 0}`,
+              downsampledSize: `${Math.ceil((gazeIntensityMap[0]?.length || 0) / hotspotOptions.downsamplingFactor)}x${Math.ceil((gazeIntensityMap.length || 0) / hotspotOptions.downsamplingFactor)}`,
+              processingTime: 'See console performance.measure logs'
+            });
+
+            finalHeatmapData = {
+              ...finalHeatmapData,
+              correlationMetrics: updatedCorrelationMetrics
+            };
+            
+            console.log('Updated correlation metrics with hotspot counts:', updatedCorrelationMetrics);
+            
+            // End performance measurement
+            if (window.performance) {
+              performance.mark('hotspot-detection-end');
+              performance.measure('Hotspot Detection', 'hotspot-detection-start', 'hotspot-detection-end');
+              const measurements = performance.getEntriesByName('Hotspot Detection');
+              if (measurements.length > 0) {
+                console.log(`Hotspot detection took ${measurements[0].duration.toFixed(2)}ms`);
+              }
+              // Clean up marks
+              performance.clearMarks('hotspot-detection-start');
+              performance.clearMarks('hotspot-detection-end');
+              performance.clearMeasures('Hotspot Detection');
+            }
+          }
+        } catch (hotspotErr) {
+          console.error('Error calculating hotspots:', hotspotErr);
+          
+          // Provide more specific error messages for common issues with large datasets
+          let errorMessage = hotspotErr.message || 'Unknown error during hotspot calculation';
+          
+          // Check if this is a memory error
+          if (errorMessage.includes('out of memory') || 
+              errorMessage.includes('allocation failed') || 
+              errorMessage.includes('heap') ||
+              (hotspotErr.stack && hotspotErr.stack.includes('RangeError'))) {
+            console.error('Memory error detected during hotspot calculation for large dataset');
+            
+            // Still add placeholder metrics to avoid UI issues
+            const placeholderMetrics = {
+              ...(finalHeatmapData.correlationMetrics || {}),
+              gaze_hotspots: 0,
+              cursor_hotspots: 0,
+              common_hotspots: 0,
+              hotspot_error: 'Memory error processing large dataset'
+            };
+            
+            finalHeatmapData = {
+              ...finalHeatmapData,
+              correlationMetrics: placeholderMetrics
+            };
+            
+            console.log('Added placeholder metrics due to processing error:', placeholderMetrics);
+          }
+        }
+        
+        // Set the state with our final data
+        setHeatmap(finalHeatmapData);
         setError(null);
       } catch (err) {
         console.error('Error fetching heatmap:', err);
@@ -456,6 +776,25 @@ const HeatmapViewer = React.memo(() => {
       ? heatmap.cursorStats 
       : heatmap?.stats || placeholderStats;
     
+    // Log available metrics for debugging
+    if (heatmap) {
+      console.log("Available stats for rendering:", {
+        stats: stats ? Object.keys(stats) : "none",
+        correlationMetrics: heatmap.correlationMetrics ? Object.keys(heatmap.correlationMetrics) : "none"
+      });
+    }
+    
+    // Check if correlation metrics exist and log values
+    if (heatmap?.correlationMetrics) {
+      console.log("Correlation metrics values:", heatmap.correlationMetrics);
+    }
+    
+    // Combine stats with correlation metrics if available
+    const combinedStats = {
+      ...stats,
+      ...(heatmap?.correlationMetrics || {})
+    };
+    
     return (
       <div className="stats-container">
         <h3>{activeView === 'cursor' ? 'Cursor Movement' : 'Eye Tracking'} Statistics</h3>
@@ -509,7 +848,11 @@ const HeatmapViewer = React.memo(() => {
               </button>
             </div>
             <div className="advanced-stats">
-              <AdvancedMetricsViz stats={stats} vizMode={advancedStatsVizMode} />
+              <AdvancedMetricsViz 
+                stats={combinedStats} 
+                vizMode={advancedStatsVizMode}
+                correlationMetrics={heatmap?.correlationMetrics}
+              />
               
               <div className="metrics-explanation">
                 <h5>Understanding These Metrics</h5>
@@ -528,28 +871,69 @@ const HeatmapViewer = React.memo(() => {
     );
   }, [heatmap, activeView, placeholderStats, showAdvancedStats, toggleAdvancedStats, toggleVizMode, advancedStatsVizMode, getStatValue]);
 
-  const renderActionButtons = useMemo(() => {
-    const hasCursorData = heatmap && heatmap.cursorHeatmapUrl;
+  const testCorrelationMetrics = useCallback(async () => {
+    console.log("Testing correlation metrics for session:", id);
     
-    return (
-      <div className="action-buttons">
-        {hasCursorData && (
-          <button 
-            className={`action-button view-toggle ${activeView === 'cursor' ? 'active' : ''}`} 
-            onClick={toggleView}
-          >
-            {activeView === 'gaze' ? 'View Cursor Heatmap' : 'View Gaze Heatmap'}
-          </button>
-        )}
-        <button className="action-button">Download as PNG</button>
-        <button className="action-button">Export Data</button>
-        <button className="action-button">Generate Report</button>
-        <button className="action-button" onClick={togglePlayer}>
-          {showPlayer ? 'Hide Player' : 'Show Player'}
-        </button>
-      </div>
-    );
-  }, [togglePlayer, showPlayer, heatmap, activeView, toggleView]);
+    try {
+      setLoading(true);
+      
+      // Call the dedicated endpoint
+      const response = await api.get(`/api/sessions/${id}/correlation_metrics`);
+      console.log("Correlation metrics test response:", response.data);
+      
+      // Update the heatmap state with the correlation metrics
+      if (response.data && !response.data.error) {
+        setHeatmap(prev => ({
+          ...prev,
+          correlationMetrics: response.data
+        }));
+        
+        // Show success message
+        alert("Correlation metrics updated! Check the console for details.");
+      } else {
+        console.error("Error:", response.data.error);
+        alert(`Error calculating correlation metrics: ${response.data.error}`);
+      }
+    } catch (error) {
+      console.error("Error testing correlation metrics:", error);
+      alert(`Error: ${error.message || "Failed to test correlation metrics"}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  const renderActionButtons = useMemo(() => (
+    <div className="action-buttons">
+      <button 
+        className="action-button view-toggle" 
+        onClick={toggleView}
+      >
+        Switch to {activeView === 'gaze' ? 'Cursor' : 'Gaze'} View
+      </button>
+      
+      <button 
+        className="action-button player-toggle" 
+        onClick={togglePlayer}
+      >
+        {showPlayer ? 'Hide Player' : 'Show Player'}
+      </button>
+      
+      <button 
+        className="action-button fullscreen-button" 
+        onClick={openFullscreen}
+      >
+        Fullscreen
+      </button>
+      
+      <button 
+        className="action-button test-metrics-button" 
+        onClick={testCorrelationMetrics}
+        disabled={loading}
+      >
+        Test Correlation Metrics
+      </button>
+    </div>
+  ), [toggleView, activeView, togglePlayer, showPlayer, openFullscreen, testCorrelationMetrics, loading]);
 
   return (
     <div className="heatmap-container">
