@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Прогноз погоды - HeatGaze Demo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f5ff;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .demo-header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px 0;
+            position: relative;
+        }
+        .demo-title {
+            margin: 0;
+            padding: 0 20px;
+        }
+        .demo-nav {
+            display: flex;
+            justify-content: center;
+            background-color: #34495e;
+            padding: 10px 0;
+        }
+        .nav-item {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        .nav-item:hover, .nav-item.active {
+            background-color: #3498db;
+        }
+        .city-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 20px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .city-tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            background-color: #ecf0f1;
+            margin-right: 5px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+        }
+        .city-tab i {
+            margin-right: 8px;
+        }
+        .city-tab.active {
+            background-color: white;
+            border-color: #ddd;
+            border-bottom-color: white;
+            margin-bottom: -1px;
+            color: #3498db;
+        }
+        .city-tab:hover:not(.active) {
+            background-color: #ddd;
+        }
+        .weather-content {
+            display: none;
+            padding: 30px;
+            background-color: white;
+            border-radius: 0 0 5px 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .weather-content.active {
+            display: block;
+        }
+        .weather-today {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .weather-icon {
+            font-size: 100px;
+            margin-right: 40px;
+            color: #3498db;
+        }
+        .weather-info {
+            flex: 1;
+        }
+        .temp {
+            font-size: 50px;
+            font-weight: bold;
+            margin: 0;
+        }
+        .condition {
+            font-size: 24px;
+            margin: 10px 0;
+            color: #7f8c8d;
+        }
+        .details {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .detail-item {
+            width: 33.33%;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        .detail-item i {
+            font-size: 24px;
+            margin-right: 10px;
+            color: #3498db;
+            width: 30px;
+            text-align: center;
+        }
+        .forecast {
+            margin-top: 30px;
+        }
+        .forecast h3 {
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .forecast-days {
+            display: flex;
+            justify-content: space-between;
+            overflow-x: auto;
+        }
+        .forecast-day {
+            flex: 0 0 19%;
+            text-align: center;
+            padding: 15px 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            margin-right: 1%;
+        }
+        .forecast-day:last-child {
+            margin-right: 0;
+        }
+        .forecast-date {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .forecast-icon {
+            font-size: 32px;
+            margin: 10px 0;
+            color: #3498db;
+        }
+        .forecast-temp {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .forecast-condition {
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        .section-title {
+            font-size: 24px;
+            margin: 30px 0 15px;
+            color: #2c3e50;
+        }
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        .action-button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            margin: 0 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+        }
+        .action-button i {
+            margin-right: 8px;
+        }
+        .action-button:hover {
+            background-color: #2980b9;
+        }
+        #gaze {
+            position: absolute;
+            display: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: solid 2px rgba(255, 0, 0, 0.7);
+            box-shadow: 0 0 15px 3px rgba(255, 0, 0, 0.3);
+            pointer-events: none;
+            z-index: 999999;
+        }
+    </style>
+    <script src="https://api.gazerecorder.com/GazeCloudAPI.js"></script>
+</head>
+<body>
+    <!-- Gaze visualization element -->
+    <div id="gaze"></div>
+
+    <div class="demo-header">
+        <div class="demo-title">
+            <h1>Прогноз погоды</h1>
+        </div>
+    </div>
+    
+    <div class="demo-nav">
+        <a href="/demo/weather-page" class="nav-item active"><i class="fas fa-cloud-sun"></i> Погода</a>
+        <a href="/demo/news-page" class="nav-item"><i class="fas fa-newspaper"></i> Новости</a>
+        <a href="/api/demo/completed" class="nav-item"><i class="fas fa-check-circle"></i> Завершить демо</a>
+    </div>
+
+    <div class="container">
+        <div class="city-tabs">
+            <div class="city-tab active" data-city="Москва">
+                <i class="fas fa-building"></i> Москва
+            </div>
+            <div class="city-tab" data-city="Санкт-Петербург">
+                <i class="fas fa-landmark"></i> Санкт-Петербург
+            </div>
+            <div class="city-tab" data-city="Екатеринбург">
+                <i class="fas fa-mountain"></i> Екатеринбург
+            </div>
+            <div class="city-tab" data-city="Новосибирск">
+                <i class="fas fa-industry"></i> Новосибирск
+            </div>
+            <div class="city-tab" data-city="Казань">
+                <i class="fas fa-mosque"></i> Казань
+            </div>
+        </div>
+
+        <!-- Москва -->
+        <div class="weather-content active" id="Москва">
+            <div class="weather-today">
+                <div class="weather-icon">
+                    <i class="fas fa-cloud-sun"></i>
+                </div>
+                <div class="weather-info">
+                    <h2 class="temp">+15°C</h2>
+                    <p class="condition">Облачно с прояснениями</p>
+                    <div class="details">
+                        <div class="detail-item">
+                            <i class="fas fa-tint"></i>
+                            <div>
+                                <div>Влажность</div>
+                                <strong>65%</strong>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-wind"></i>
+                            <div>
+                                <div>Ветер</div>
+                                <strong>5 м/с</strong>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-compress-alt"></i>
+                            <div>
+                                <div>Давление</div>
+                                <strong>750 мм рт.ст.</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="forecast">
+                <h3>Прогноз на 5 дней</h3>
+                <div class="forecast-days">
+                    <div class="forecast-day">
+                        <div class="forecast-date">01.04.2025</div>
+                        <div class="forecast-icon"><i class="fas fa-sun"></i></div>
+                        <div class="forecast-temp">+16°C</div>
+                        <div class="forecast-condition">Ясно</div>
+                    </div>
+                    <div class="forecast-day">
+                        <div class="forecast-date">02.04.2025</div>
+                        <div class="forecast-icon"><i class="fas fa-sun"></i></div>
+                        <div class="forecast-temp">+18°C</div>
+                        <div class="forecast-condition">Ясно</div>
+                    </div>
+                    <div class="forecast-day">
+                        <div class="forecast-date">03.04.2025</div>
+                        <div class="forecast-icon"><i class="fas fa-cloud-rain"></i></div>
+                        <div class="forecast-temp">+14°C</div>
+                        <div class="forecast-condition">Небольшой дождь</div>
+                    </div>
+                    <div class="forecast-day">
+                        <div class="forecast-date">04.04.2025</div>
+                        <div class="forecast-icon"><i class="fas fa-cloud-showers-heavy"></i></div>
+                        <div class="forecast-temp">+12°C</div>
+                        <div class="forecast-condition">Дождь</div>
+                    </div>
+                    <div class="forecast-day">
+                        <div class="forecast-date">05.04.2025</div>
+                        <div class="forecast-icon"><i class="fas fa-cloud"></i></div>
+                        <div class="forecast-temp">+15°C</div>
+                        <div class="forecast-condition">Облачно</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="action-button"><i class="fas fa-sync-alt"></i> Обновить</button>
+                <button class="action-button"><i class="fas fa-map-marked-alt"></i> Подробная карта</button>
+            </div>
+        </div>
+
+        <!-- Санкт-Петербург -->
+        <div class="weather-content" id="Санкт-Петербург">
+            <div class="weather-today">
+                <div class="weather-icon">
+                    <i class="fas fa-cloud-rain"></i>
+                </div>
+                <div class="weather-info">
+                    <h2 class="temp">+12°C</h2>
+                    <p class="condition">Дождь</p>
+                    <div class="details">
+                        <div class="detail-item">
+                            <i class="fas fa-tint"></i>
+                            <div>
+                                <div>Влажность</div>
+                                <strong>80%</strong>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-wind"></i>
+                            <div>
+                                <div>Ветер</div>
+                                <strong>7 м/с</strong>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-compress-alt"></i>
+                            <div>
+                                <div>Давление</div>
+                                <strong>748 мм рт.ст.</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="forecast">
+                <h3>Прогноз на 5 дней</h3>
+                <div class="forecast-days">
+                    <div class="forecast-day">
+                        <div class="forecast-date">01.04.2025</div>
+                        <div class="forecast-icon"><i class="fas fa-cloud"></i></div>
+                        <div class="forecast-temp">+13°C</div>
+                        <div class="forecast-condition">Облачно</div>
+                    </div>
+                    <div class="forecast-day">
+                        <div class="forecast-date">02.04.2025</div>
+                        <div class="forecast-icon"><i class="fas fa-cloud-rain"></i></div>
+                        <div class="forecast-temp">+14°C</div>
+                        <div class="forecast-condition">Небольшой дождь</div>
+                    </div>
+                    <div class="forecast-day">
+                        <div class="forecast-date">03.04.2025</div>
+                        <div class="forecast-icon"><i class="fas fa-cloud-showers-heavy"></i></div>
+                        <div class="forecast-temp">+11°C</div>
+                        <div class="forecast-condition">Дождь</div>
+                    </div>
+                    <div class="forecast-day">
+                        <div class="forecast-date">04.04.2025</div>
+                        <div class="forecast-icon"><i class="fas fa-cloud-showers-heavy"></i></div>
+                        <div class="forecast-temp">+10°C</div>
+                        <div class="forecast-condition">Дождь</div>
+                    </div>
+                    <div class="forecast-day">
+                        <div class="forecast-date">05.04.2025</div>
+                        <div class="forecast-icon"><i class="fas fa-cloud"></i></div>
+                        <div class="forecast-temp">+12°C</div>
+                        <div class="forecast-condition">Облачно</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="action-button"><i class="fas fa-sync-alt"></i> Обновить</button>
+                <button class="action-button"><i class="fas fa-map-marked-alt"></i> Подробная карта</button>
+            </div>
+        </div>
+
+        <!-- Additional city content would be similar -->
+        <div class="weather-content" id="Екатеринбург">
+            <!-- Similar structure as above cities -->
+            <div class="weather-today">
+                <div class="weather-icon">
+                    <i class="fas fa-cloud"></i>
+                </div>
+                <div class="weather-info">
+                    <h2 class="temp">+10°C</h2>
+                    <p class="condition">Облачно</p>
+                    <div class="details">
+                        <div class="detail-item">
+                            <i class="fas fa-tint"></i>
+                            <div>
+                                <div>Влажность</div>
+                                <strong>70%</strong>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-wind"></i>
+                            <div>
+                                <div>Ветер</div>
+                                <strong>6 м/с</strong>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-compress-alt"></i>
+                            <div>
+                                <div>Давление</div>
+                                <strong>745 мм рт.ст.</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Forecast section similar to above -->
+            <div class="forecast">
+                <h3>Прогноз на 5 дней</h3>
+                <div class="forecast-days">
+                    <!-- Forecast days similar to above -->
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="action-button"><i class="fas fa-sync-alt"></i> Обновить</button>
+                <button class="action-button"><i class="fas fa-map-marked-alt"></i> Подробная карта</button>
+            </div>
+        </div>
+
+        <div class="weather-content" id="Новосибирск">
+            <!-- Similar structure for Novosibirsk -->
+        </div>
+
+        <div class="weather-content" id="Казань">
+            <!-- Similar structure for Kazan -->
+        </div>
+    </div>
+
+    <script>
+        // Tab Switching
+        document.querySelectorAll('.city-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Remove active class from all tabs
+                document.querySelectorAll('.city-tab').forEach(t => t.classList.remove('active'));
+                // Add active class to clicked tab
+                this.classList.add('active');
+                
+                // Hide all content
+                document.querySelectorAll('.weather-content').forEach(content => content.classList.remove('active'));
+                // Show corresponding content
+                document.getElementById(this.dataset.city).classList.add('active');
+            });
+        });
+
+        // GazeCloudAPI integration
+        function PlotGaze(GazeData) {
+            // Update gaze point position
+            var x = GazeData.docX;
+            var y = GazeData.docY;
+            var gaze = document.getElementById("gaze");
+            x -= gaze.clientWidth/2;
+            y -= gaze.clientHeight/2;
+            
+            gaze.style.left = x + "px";
+            gaze.style.top = y + "px";
+            
+            // Show/hide gaze point based on state
+            if (GazeData.state != 0) {
+                if (gaze.style.display == 'block')
+                    gaze.style.display = 'none';
+            } else {
+                if (gaze.style.display == 'none')
+                    gaze.style.display = 'block';
+            }
+        }
+        
+        // Set up GazeCloudAPI callbacks
+        window.addEventListener("load", function() {
+            GazeCloudAPI.OnCalibrationComplete = function() {
+                console.log('Gaze Calibration Complete');
+            };
+            
+            GazeCloudAPI.OnCamDenied = function() {
+                console.log('Camera access denied');
+                alert('Camera access is required for eye tracking. Please allow camera access and refresh the page.');
+            };
+            
+            GazeCloudAPI.OnError = function(msg) {
+                console.error('GazeCloudAPI Error:', msg);
+            };
+            
+            GazeCloudAPI.UseClickRecalibration = true;
+            GazeCloudAPI.OnResult = PlotGaze;
+        });
+
+        // Start eye tracking automatically (can be commented out if manual start is preferred)
+        // window.addEventListener("load", function() {
+        //     setTimeout(() => {
+        //         GazeCloudAPI.StartEyeTracking();
+        //     }, 1000);
+        // });
+    </script>
+</body>
+</html> 
