@@ -14,10 +14,10 @@ HeatGaze - это веб-приложение для отслеживания д
 ## Технологии
 
 - Frontend: React.js
-- Backend: Node.js, Express
-- База данных: PostgreSQL
+- Backend: Node.js, Python
+- База данных: SQLite
 - Отслеживание глаз: GazeCloud API
-- Стилизация: CSS3, Tailwind CSS
+- Стилизация: CSS
 
 ## Установка
 
