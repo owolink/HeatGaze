@@ -145,84 +145,84 @@ const AdvancedMetricsViz = ({ stats, vizMode, correlationMetrics }) => {
   const metricConfig = {
     kld: { 
       min: 0, max: 2, optimal: 0.5, 
-      description: "Measures difference from uniform distribution. Lower values indicate more uniform attention.",
+      description: "Определяет разницу от равномерного распределения. Меньшие значения указывают на более равномерное внимание.",
       reversed: true
     },
     nss: { 
       min: -2, max: 3, optimal: 1.5, 
-      description: "Normalized Scanpath Saliency (NSS). Typical range: -2 to 3. Values > 1 indicate high relevance of fixation points, values < 0 indicate fixations in non-relevant areas.",
+      description: "Нормализованная сканирующая салективность (NSS). Типичный диапазон: -2 до 3. Значения > 1 указывают на высокую релевантность фиксаций, значения < 0 указывают на фиксации в нерелевантных областях.",
       label: "NSS"
     },
     similarity: { 
       min: 0, max: 1, optimal: 0.7, 
-      description: "Histogram intersection with uniform map. Higher values indicate greater similarity to baseline distribution." 
+      description: "Пересечение гистограммы с равномерной картой. Большие значения указывают на большую схожесть с базовым распределением." 
     },
     cc: { 
       min: -1, max: 1, optimal: 0.7, 
-      description: "Linear correlation with uniform distribution. Values closer to 1 indicate stronger positive correlation." 
+      description: "Линейная корреляция с равномерным распределением. Значения ближе к 1 указывают на более сильную положительную корреляцию." 
     },
     auc: { 
       min: 0, max: 1, optimal: 0.8, 
-      description: "Area Under ROC Curve. Values above 0.5 indicate better-than-chance fixation prediction (max is 1.0)." 
+      description: "Площадь под кривой ROC. Значения выше 0.5 указывают на лучшие результаты предсказания фиксаций (максимальное значение - 1.0)." 
     },
     mean_intensity: { 
       min: 0, max: 1, optimal: 0.5, 
-      description: "Average intensity across the heatmap. Higher values indicate stronger overall focus." 
+      description: "Средняя интенсивность по всей тепловой карте. Большие значения указывают на более сильное общее внимание." 
     },
     median_intensity: { 
       min: 0, max: 1, optimal: 0.4, 
-      description: "Median intensity value. Less affected by outliers than mean."
+      description: "Медианная интенсивность. Менее подвержена влиянию выбросов, чем средняя интенсивность."
     },
     std_dev: { 
       min: 0, max: 0.5, optimal: 0.25, 
-      description: "Standard deviation of intensities. Higher values indicate more variation in focus."
+      description: "Стандартное отклонение интенсивностей. Большие значения указывают на большую вариацию в фокусе."
     },
     high_activity_proportion: { 
       min: 0, max: 100, optimal: 20, suffix: '%',
-      description: "Percentage of areas with high activity (>70% of max intensity)."
+      description: "Процент областей с высокой активностью (>70% от максимальной интенсивности)."
     },
     low_activity_proportion: { 
       min: 0, max: 100, optimal: 50, suffix: '%',
-      description: "Percentage of areas with low activity (<20% of max intensity)."
+      description: "Процент областей с низкой активностью (<20% от максимальной интенсивности)."
     },
     mean_gradient: { 
       min: 0, max: 0.3, optimal: 0.15, 
-      description: "Average rate of change in intensity. Higher values indicate more defined focus boundaries."
+      description: "Средняя скорость изменения интенсивности. Большие значения указывают на более четко определенные границы фокуса."
     },
     correlation_coefficient: { 
       min: -1, max: 1, optimal: 0.7, 
-      description: "Pearson's Correlation Coefficient (PCC). Range: -1 to 1. 1 indicates perfect positive correlation, 0 indicates no linear relationship, -1 indicates perfect negative correlation.",
-      label: "Correlation Coefficient"
+      description: "Коэффициент корреляции Пирсона (PCC). Диапазон: -1 до 1. 1 указывает на идеальную положительную корреляцию, 0 указывает на отсутствие линейной связи, -1 указывает на идеальную отрицательную корреляцию.",
+      label: "Коэффициент корреляции"
     },
     histogram_intersection: { 
       min: 0, max: 1, optimal: 0.7, 
-      description: "Histogram Intersection. Range: 0 to 1. Higher values indicate more similar distributions between gaze and cursor heatmaps.",
-      label: "Histogram Intersection"
+      description: "Пересечение гистограмм. Диапазон: 0 до 1. Большие значения указывают на большую схожесть между картами взгляда и курсора.",
+      label: "Пересечение гистограмм"
     },
     kl_divergence: { 
       min: 0, max: 2, optimal: 0.5, reversed: true,
-      description: "Kullback-Leibler divergence between gaze and cursor distributions. Lower values indicate more similar distributions.",
-      label: "KL Divergence"
+      description: "Расхождение Кульбака-Лейблера между распределениями взгляда и курсора. Меньшие значения указывают на более схожие распределения.",
+      label: "Расхождение Кульбака-Лейблера"
     },
     iou: { 
       min: 0, max: 1, optimal: 0.7, 
-      description: "Intersection over Union (IoU). Range: 0 to 1. 1 indicates perfect overlap of binary maps, 0 indicates no overlap.",
+      description: "Пересечение над объединением (IoU). Диапазон: 0 до 1. 1 указывает на идеальное перекрытие бинарных карт, 0 указывает на отсутствие перекрытия.",
       label: "IoU"
     },
     common_hotspots: { 
       min: 0, max: 10, optimal: 3, 
-      description: "Number of significant attention regions that appear in both gaze and cursor heatmaps. Identified by thresholding and finding overlapping high-intensity areas.",
-      label: "Common Hotspots"
+      description: "Количество значимых областей внимания, которые появляются в обоих картах взгляда и курсора. Определяется путем пороговой обработки и нахождения перекрывающихся областей с высокой интенсивностью.",
+      label: "Общие области внимания"
     },
     gaze_hotspots: {
       min: 0, max: 10, optimal: 3,
-      description: "Number of distinct high-attention regions in the gaze heatmap, detected using thresholding and connected component analysis.",
-      label: "Gaze Hotspots"
+      description: "Количество отдельных областей с высокой активностью в карте взгляда, определяемых с помощью пороговой обработки и анализа связных компонентов.",
+      label: "Область внимания взгляда"
     },
     cursor_hotspots: {
       min: 0, max: 10, optimal: 3,
-      description: "Number of distinct high-activity regions in the cursor heatmap, detected using thresholding and connected component analysis.",
-      label: "Cursor Hotspots"
+      description: "Количество отдельных областей с высокой активностью в карте курсора, определяемых с помощью пороговой обработки и анализа связных компонентов.",
+      label: "Область внимания курсора"
     }
   };
   
@@ -256,7 +256,7 @@ const AdvancedMetricsViz = ({ stats, vizMode, correlationMetrics }) => {
   return (
     <div className="advanced-metrics-container">
       <div className="metric-group">
-        <h4>Attention Metrics</h4>
+        <h4>Метрики внимания</h4>
         <div className="stat-grid advanced">
           {metricGroups.attention.map(metric => {
             // Skip metrics that don't exist in stats
@@ -289,7 +289,7 @@ const AdvancedMetricsViz = ({ stats, vizMode, correlationMetrics }) => {
       </div>
       
       <div className="metric-group">
-        <h4>Intensity Metrics</h4>
+        <h4>Метрики интенсивности</h4>
         <div className="stat-grid advanced">
           {metricGroups.intensity.map(metric => {
             // Skip metrics that don't exist in stats
@@ -317,7 +317,7 @@ const AdvancedMetricsViz = ({ stats, vizMode, correlationMetrics }) => {
       
       {correlationMetrics && Object.values(correlationMetrics).some(value => value !== 0) && (
         <div className="metric-group correlation">
-          <h4>Gaze-Cursor Correlation Metrics</h4>
+          <h4>Метрики корреляции тепловых карт</h4>
           <div className="stat-grid advanced correlation">
             {metricGroups.correlation.map(metric => {
               const config = metricConfig[metric.key];
@@ -707,15 +707,15 @@ const HeatmapViewer = React.memo(({ currentUser }) => {
   // Memoize the render parts for better performance
   const renderHeader = useMemo(() => (
     <div className="heatmap-header">
-      <h1>Heatmap Viewer</h1>
-      <button className="back-button" onClick={navigateToDashboard}>Back to Dashboard</button>
+      <h1>Просмотр тепловой карты</h1>
+      <button className="back-button" onClick={navigateToDashboard}>Вернуться на дашборд</button>
     </div>
   ), [navigateToDashboard]);
 
   const renderLoading = useMemo(() => (
     <div className="loading-container">
       <div className="loading-spinner"></div>
-      <p>Loading heatmap data...</p>
+      <p>Загрузка данных тепловой карты...</p>
     </div>
   ), []);
 
@@ -771,7 +771,6 @@ const HeatmapViewer = React.memo(({ currentUser }) => {
   };
 
   const renderStats = useMemo(() => {
-    // Choose which stats to display based on activeView
     const stats = activeView === 'cursor' && heatmap?.cursorStats 
       ? heatmap.cursorStats 
       : heatmap?.stats || placeholderStats;
@@ -797,42 +796,42 @@ const HeatmapViewer = React.memo(({ currentUser }) => {
     
     return (
       <div className="stats-container">
-        <h3>{activeView === 'cursor' ? 'Cursor Movement' : 'Eye Tracking'} Statistics</h3>
+        <h3>{activeView === 'cursor' ? 'Статистика движений курсора' : 'Статистика отслеживания взгляда'}</h3>
         <div className="stats-header">
-          <span>Basic Metrics</span>
+          <span>Основные метрики</span>
           <button className="toggle-stats-button" onClick={toggleAdvancedStats}>
-            {showAdvancedStats ? 'Hide Advanced Metrics' : 'Show Advanced Metrics'}
+            {showAdvancedStats ? 'Скрыть расширенные метрики' : 'Показать расширенные метрики'}
           </button>
         </div>
         
         <div className="stats-grid">
           <MetricCard 
-            label="Data Points" 
+            label="Точки данных" 
             value={getStatValue('pointCount')} 
-            description={`Total number of ${activeView === 'cursor' ? 'cursor' : 'gaze'} points captured in this session`} 
+            description={`Общее количество ${activeView === 'cursor' ? 'точек курсора' : 'точек взгляда'}, зарегистрированных в этой сессии`} 
           />
           <MetricCard 
-            label="Focus Areas" 
+            label="Области фокуса" 
             value={getStatValue('focus_areas')} 
-            description={`Number of distinct areas that received significant ${activeView === 'cursor' ? 'cursor' : 'eye'} attention`} 
+            description={`Количество различных областей, получивших значительное ${activeView === 'cursor' ? 'внимание курсора' : 'внимание взгляда'}`} 
             min={0}
             max={10}
             optimal={3}
           />
           <MetricCard 
-            label="Attention Score" 
+            label="Оценка внимания" 
             value={getStatValue('attention_score')} 
             suffix="%" 
-            description="Overall score based on focus quality and quantity" 
+            description="Общая оценка на основе качества и количества фокуса" 
             min={0}
             max={100}
             optimal={75}
           />
           <MetricCard 
-            label="Page Coverage" 
+            label="Покрытие страницы" 
             value={Math.round(getStatValue('coverage') * 100)} 
             suffix="%" 
-            description={`Percentage of the screen that received ${activeView === 'cursor' ? 'cursor' : 'eye'} attention`} 
+            description={`Процент экрана, получивший ${activeView === 'cursor' ? 'внимание курсора' : 'внимание взгляда'}`} 
             min={0}
             max={100}
             optimal={60}
@@ -842,9 +841,9 @@ const HeatmapViewer = React.memo(({ currentUser }) => {
         {showAdvancedStats && (
           <>
             <div className="advanced-stats-header">
-              <h4 className="advanced-stats-title">Advanced Metrics</h4>
+              <h4 className="advanced-stats-title">Расширенные метрики</h4>
               <button className="viz-toggle-button" onClick={toggleVizMode}>
-                {advancedStatsVizMode === 'cards' ? 'Show as Chart' : 'Show as Cards'}
+                {advancedStatsVizMode === 'cards' ? 'Показать как график' : 'Показать как карточки'}
               </button>
             </div>
             <div className="advanced-stats">
@@ -855,14 +854,14 @@ const HeatmapViewer = React.memo(({ currentUser }) => {
               />
               
               <div className="metrics-explanation">
-                <h5>Understanding These Metrics</h5>
-                <p>These metrics are color-coded to indicate performance:</p>
+                <h5>Понимание метрик</h5>
+                <p>Метрики цветом обозначают производительность:</p>
                 <ul className="color-legend">
-                  <li><span className="color-dot green"></span> <strong>Good</strong> - Value is near optimal range</li>
-                  <li><span className="color-dot yellow"></span> <strong>Warning</strong> - Value is slightly outside optimal range</li>
-                  <li><span className="color-dot red"></span> <strong>Poor</strong> - Value is significantly outside optimal range</li>
+                  <li><span className="color-dot green"></span> <strong>Хорошо </strong> - Значение близко к оптимальному диапазону</li>
+                  <li><span className="color-dot yellow"></span> <strong>Предупреждение </strong> - Значение немного выходит за оптимальный диапазон</li>
+                  <li><span className="color-dot red"></span> <strong>Плохо </strong> - Значение значительно выходит за оптимальный диапазон</li>
                 </ul>
-                <p>Hover over any metric for a detailed explanation and expected range.</p>
+                <p>Наведите на любую метрику для подробного объяснения и ожидаемого диапазона.</p>
               </div>
             </div>
           </>
@@ -908,21 +907,21 @@ const HeatmapViewer = React.memo(({ currentUser }) => {
         className="action-button view-toggle" 
         onClick={toggleView}
       >
-        Switch to {activeView === 'gaze' ? 'Cursor' : 'Gaze'} View
+        Переключить на {activeView === 'gaze' ? 'курсор' : 'взгляд'}
       </button>
       
       <button 
         className="action-button player-toggle" 
         onClick={togglePlayer}
       >
-        {showPlayer ? 'Hide Player' : 'Show Player'}
+        {showPlayer ? 'Скрыть плеер' : 'Показать плеер'}
       </button>
       
       <button 
         className="action-button fullscreen-button" 
         onClick={openFullscreen}
       >
-        Fullscreen
+        На весь экран
       </button>
       
       <button 
@@ -930,7 +929,7 @@ const HeatmapViewer = React.memo(({ currentUser }) => {
         onClick={testCorrelationMetrics}
         disabled={loading}
       >
-        Test Correlation Metrics
+        Проверить метрики корреляции
       </button>
     </div>
   ), [toggleView, activeView, togglePlayer, showPlayer, openFullscreen, testCorrelationMetrics, loading]);
@@ -942,12 +941,12 @@ const HeatmapViewer = React.memo(({ currentUser }) => {
       {loading ? renderLoading : error ? renderError : (
         <div className="heatmap-content">
           <div className="heatmap-info">
-            <h2>Session ID: {id}</h2>
-            <p>Created: {new Date().toLocaleString()}</p>
-            <p>User: {currentUser?.username}</p>
+            <h2>ID сессии: {id}</h2>
+            <p>Создано: {new Date().toLocaleString()}</p>
+            <p>Пользователь: {currentUser?.username}</p>
             {heatmap && heatmap.cursorHeatmapUrl && (
               <p className="heatmap-type">
-                Currently viewing: <strong>{activeView === 'gaze' ? 'Eye Tracking' : 'Cursor Movement'}</strong> heatmap
+                Текущий просмотр: <strong>{activeView === 'gaze' ? 'Тепловая карта взгляда' : 'Тепловая карта курсора'}</strong>
               </p>
             )}
           </div>
@@ -982,11 +981,11 @@ const HeatmapViewer = React.memo(({ currentUser }) => {
                   <button onClick={decreaseZoom} className="zoom-button">−</button>
                   <span className="zoom-level">{Math.round(zoomLevel * 100)}%</span>
                   <button onClick={increaseZoom} className="zoom-button">+</button>
-                  <button onClick={resetZoom} className="zoom-reset">Reset</button>
+                  <button onClick={resetZoom} className="zoom-reset">Сбросить</button>
                 </div>
                 {zoomLevel > 1 && (
                   <div className="drag-instructions">
-                    <span>🖱️ Click and drag to move the image</span>
+                    <span>Нажмите и перетащите для перемещения изображения</span>
                   </div>
                 )}
               </div>

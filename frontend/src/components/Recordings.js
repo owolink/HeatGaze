@@ -58,7 +58,7 @@ const Recordings = () => {
   if (isLoading) {
     return (
       <div className="recordings-container">
-        <div className="loading-spinner">Loading recordings...</div>
+        <div className="loading-spinner">Загружаются записи...</div>
       </div>
     );
   }
@@ -73,12 +73,12 @@ const Recordings = () => {
 
   return (
     <div className="recordings-container">
-      <h1>Recordings</h1>
+      <h1>Записи</h1>
       
       {recordings.length === 0 ? (
         <div className="no-recordings-message">
-          <h2>No Recordings Available</h2>
-          <p>There are no recordings available at this time.</p>
+          <h2>Нет доступных записей</h2>
+          <p>В настоящее время нет доступных записей.</p>
         </div>
       ) : (
         <div className="recordings-grid">
@@ -86,34 +86,28 @@ const Recordings = () => {
             <div key={recording.id} className="recording-card">
               <div className="recording-info">
                 <h3>{recording.name || 'Untitled Recording'}</h3>
-                <p>Date: {new Date(recording.created_at).toLocaleDateString()}</p>
-                <p>Duration: {formatDuration(recording.duration)}</p>
-                <p>User: {recording.username || 'Unknown'}</p>
+                <p>Дата: {new Date(recording.created_at).toLocaleDateString()}</p>
+                <p>Длительность: {formatDuration(recording.duration)}</p>
+                <p>Пользователь: {recording.username || 'Unknown'}</p>
                 <div className="recording-tags">
-                  <span className="tag gaze-tag">Gaze</span>
-                  {recording.hasCursorData && <span className="tag cursor-tag">Cursor</span>}
+                  <span className="tag gaze-tag">Взгляд</span>
+                  {recording.hasCursorData && <span className="tag cursor-tag">Курсор</span>}
                 </div>
               </div>
               <div className="recording-actions">
-                <Link 
-                  to={`/recordings/${recording.id}`} 
-                  className="action-button view-recording"
-                >
-                  View Recording
-                </Link>
                 <div className="heatmap-links">
                   <Link 
                     to={`/recordings/${recording.id}/heatmap?type=gaze`} 
                     className="action-button view-heatmap gaze-heatmap"
                   >
-                    Gaze Heatmap
+                    Карта взгляда
                   </Link>
                   {recording.hasCursorData && (
                     <Link 
                       to={`/recordings/${recording.id}/heatmap?type=cursor`} 
                       className="action-button view-heatmap cursor-heatmap"
                     >
-                      Cursor Heatmap
+                      Карта курсора
                     </Link>
                   )}
                 </div>

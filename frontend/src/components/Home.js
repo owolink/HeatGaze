@@ -13,14 +13,14 @@ const Home = () => {
   return (
     <div className="home-container">
       <div className="home-content">
-        <h1>Welcome to HeatGaze</h1>
-        <p>Track eye movements and generate heatmaps for better user experience analysis</p>
+        <h1>Добро пожаловать в HeatGaze</h1>
+        <p>Отслеживайте движения глаз и генерируйте тепловые карты для лучшего анализа пользовательского опыта</p>
         <div className="home-buttons">
           <Link to="/login" className="home-button">
-            Login
+            Войти
           </Link>
           <Link to="/register" className="home-button highlight">
-            Get Started
+            Зарегистрироваться
           </Link>
         </div>
       </div>

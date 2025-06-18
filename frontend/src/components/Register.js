@@ -81,7 +81,7 @@ const Register = () => {
   return (
     <div className="register-container">
       <div className="register-form-wrapper">
-        <h2>Create an Account</h2>
+        <h2>Создать аккаунт</h2>
         
         {(formError || error) && (
           <div className="error-message">
@@ -91,14 +91,14 @@ const Register = () => {
         
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="username">Username</label>
+            <label htmlFor="username">Имя пользователя</label>
             <input
               type="text"
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               disabled={isSubmitting}
-              placeholder="Choose a username"
+              placeholder="Введите имя пользователя"
               required
             />
           </div>
@@ -111,33 +111,33 @@ const Register = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isSubmitting}
-              placeholder="Enter your email"
+              placeholder="Введите ваш email"
               required
             />
           </div>
           
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">Пароль</label>
             <input
               type="password"
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={isSubmitting}
-              placeholder="Choose a password"
+              placeholder="Введите пароль"
               required
             />
           </div>
           
           <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
+            <label htmlFor="confirmPassword">Подтвердите пароль</label>
             <input
               type="password"
               id="confirmPassword"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               disabled={isSubmitting}
-              placeholder="Confirm your password"
+              placeholder="Подтвердите пароль"
               required
             />
           </div>
@@ -147,12 +147,12 @@ const Register = () => {
             className="register-button" 
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Creating Account...' : 'Create Account'}
+            {isSubmitting ? 'Создание аккаунта...' : 'Создать аккаунт'}
           </button>
         </form>
         
         <div className="register-footer">
-          <p>Already have an account? <Link to="/login">Sign in</Link></p>
+          <p>Уже есть аккаунт? <Link to="/login">Войти</Link></p>
         </div>
       </div>
     </div>

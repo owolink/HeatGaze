@@ -46,7 +46,7 @@ const Login = () => {
   return (
     <div className="login-container">
       <div className="login-form-wrapper">
-        <h2>Sign In</h2>
+        <h2>Войти</h2>
         
         {(formError || error) && (
           <div className="error-message">
@@ -56,27 +56,27 @@ const Login = () => {
         
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="username">Username</label>
+            <label htmlFor="username">Имя пользователя</label>
             <input
               type="text"
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               disabled={isSubmitting}
-              placeholder="Enter your username"
+              placeholder="Введите имя пользователя"
               required
             />
           </div>
           
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">Пароль</label>
             <input
               type="password"
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={isSubmitting}
-              placeholder="Enter your password"
+              placeholder="Введите пароль"
               required
             />
           </div>
@@ -86,14 +86,14 @@ const Login = () => {
             className="login-button" 
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Signing in...' : 'Sign In'}
+            {isSubmitting ? '...' : 'Войти'}
           </button>
         </form>
         
         <div className="login-footer">
-          <p>Don't have an account? <Link to="/register">Sign up</Link></p>
+          <p>Нет аккаунта? <Link to="/register">Зарегистрироваться</Link></p>
           <p className="demo-credentials">
-            <small>Demo credentials: <strong>testuser</strong> / <strong>password</strong></small>
+            <small>Данные для демонстрации: <strong>testuser</strong> / <strong>password</strong></small>
           </p>
         </div>
       </div>

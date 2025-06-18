@@ -62,7 +62,7 @@ const SessionView = () => {
             sx={{ mt: 2 }} 
             onClick={() => navigate('/dashboard')}
           >
-            Back to Dashboard
+            Вернуться на дашборд
           </Button>
         </Paper>
       </Box>
@@ -76,7 +76,7 @@ const SessionView = () => {
           Session #{id}: {session?.name || 'Untitled'}
         </Typography>
         <Button variant="outlined" onClick={() => navigate('/dashboard')}>
-          Back to Dashboard
+          Вернуться на дашборд
         </Button>
       </Box>
       
@@ -96,11 +96,11 @@ const SessionView = () => {
       {activeTab === 1 && !hasCursorData && (
         <Paper sx={{ p: 3, mt: 3, textAlign: 'center' }}>
           <Typography variant="h6" color="error" gutterBottom>
-            No cursor data available
+            Нет данных о движении мыши
           </Typography>
           <Typography>
-            This session doesn't contain any cursor movement data. 
-            Try selecting a different session or recording a new session with cursor tracking enabled.
+            Эта сессия не содержит данных о движении мыши. 
+            Попробуйте выбрать другую сессию или записать новую сессию с включенным отслеживанием движения мыши.
           </Typography>
         </Paper>
       )}

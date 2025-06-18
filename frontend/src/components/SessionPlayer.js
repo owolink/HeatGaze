@@ -1346,21 +1346,21 @@ const SessionPlayerComponent = ({
           onClick={() => setDataTypeView('both')}
           disabled={!hasGazeData && !hasCursorData}
         >
-          Both
+          Все
         </button>
         <button 
           className={`data-button gaze-button ${activeDataType === 'gaze' ? 'active' : ''}`}
           onClick={() => setDataTypeView('gaze')}
           disabled={!hasGazeData}
         >
-          Gaze
+          Взгляд
         </button>
         <button 
           className={`data-button cursor-button ${activeDataType === 'cursor' ? 'active' : ''}`}
           onClick={() => setDataTypeView('cursor')}
           disabled={!hasCursorData}
         >
-          Cursor
+          Курсор
         </button>
       </div>
       
@@ -1451,7 +1451,7 @@ const SessionPlayerComponent = ({
               </button>
             </div>
             
-            {/* Debug button */}
+            {/* Debug button
             <button 
               onClick={renderTestFrame} 
               className="debug-button"
@@ -1468,7 +1468,7 @@ const SessionPlayerComponent = ({
               style={{ marginLeft: '10px', background: '#9b59b6' }}
             >
               Export Data
-            </button>
+            </button> */}
           </div>
           
           <div className="progress-container">
@@ -1490,12 +1490,12 @@ const SessionPlayerComponent = ({
       
       <div className="session-info">
         <div className="info-panel">
-          <h3>Session Details</h3>
-          <p><strong>Name:</strong> {session?.name || 'Unknown'}</p>
-          <p><strong>Date:</strong> {session?.created_at ? new Date(session.created_at).toLocaleString() : 'Unknown'}</p>
-          <p><strong>Duration:</strong> {formatTime(duration)}</p>
-          <p><strong>User:</strong> {session?.username || 'Unknown'}</p>
-          <p><strong>Data Points:</strong> Gaze: {gazeData.length}, Cursor: {cursorData.length}</p>
+          <h3>Данные сессии</h3>
+          <p><strong>Название:</strong> {session?.name || 'Unknown'}</p>
+          <p><strong>Дата:</strong> {session?.created_at ? new Date(session.created_at).toLocaleString() : 'Unknown'}</p>
+          <p><strong>Длительность:</strong> {formatTime(duration)}</p>
+          <p><strong>Пользователь:</strong> {session?.username || 'Unknown'}</p>
+          <p><strong>Точки данных:</strong> Взгляд: {gazeData.length}, Курсор: {cursorData.length}</p>
         </div>
       </div>
     </div>
